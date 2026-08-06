@@ -1,0 +1,1 @@
+# SCADA-Core_Automatica_GRUPO4
