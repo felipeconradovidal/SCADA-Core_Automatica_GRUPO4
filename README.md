@@ -1,4 +1,24 @@
 # PBL SCADA-Core Automática
+---
+## Sumário
+
+- [Aula 01 - Kick-off & Arquitetura do SCADA](#aula-01---kick-off--arquitetura-do-scada)
+- [1. Introdução](#1-introdução)
+- [2. Objetivo da Planta](#2-objetivo-da-planta)
+- [3. Descrição Geral do Processo](#3-descrição-geral-do-processo)
+- [4. Etapas do Processo Industrial](#4-etapas-do-processo-industrial)
+  - [4.1 Recepção e Alimentação](#41-recepção-e-alimentação)
+  - [4.2 Transporte pela Esteira](#42-transporte-pela-esteira)
+  - [4.3 Pesagem Contínua](#43-pesagem-contínua)
+  - [4.4 Inspeção por Visão Computacional](#44-inspeção-por-visão-computacional)
+  - [4.5 Classificação do tipo dos grãos agrícolas](#45-classificação-do-tipo-dos-grãos-agrícolas)
+  - [4.5 Sistema de Ejeção Pneumática](#45-sistema-de-ejeção-pneumática)
+  - [4.5 Coleta e Monitoramento](#45-coleta-e-monitoramento)
+- [5. Categoria do Produto Processado](#5-categoria-do-produto-processado)
+  - [5.1 Categoria A - Produto Aprovado](#51-categoria-a---produto-aprovado)
+  - [5.2 Categoria B - Produto Secundário](#52-categoria-b---produto-secundário)
+  - [5.3 Categoria C - Produto Rejeitado](#53-categoria-c---produto-rejeitado)
+---
 
 ## Aula 01 - Kick-off & Arquitetura do SCADA
 
