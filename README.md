@@ -1,6 +1,6 @@
 # PBL SCADA-Core Automática
 
-## Aula 01 — Kick-off & Arquitetura do SCADA
+## Aula 01 - Kick-off & Arquitetura do SCADA
 
 ### Definição da Planta Industrial
 
@@ -53,7 +53,7 @@ O sistema deverá:
 10. Detectar condições anormais de operação;
 11. Gerar alarmes para o operador;
 12. Registrar eventos importantes do processo;
-13. Realizar intertravamentos para impedir operações inseguras;
+13. Realizar inter-travamentos para impedir operações inseguras;
 14. Permitir o diagnóstico de falhas;
 15. Apresentar as informações do processo através de uma interface SCADA.
 
@@ -67,6 +67,7 @@ O processo pode ser dividido nas seguintes etapas:
 
 O fluxo básico do processo é:
 
+! IMAGEM
 
 ---
 
@@ -93,7 +94,7 @@ Uma condição de nível excessivamente alto pode indicar que os grãos não est
 
 Após o funil, um mecanismo de alimentação controla a quantidade de grãos que entra na esteira.
 
-Esse mecanismo pode ser representado por um alimentador vibratório, cuja função é manter uma quantidade adequada de grãos sobre a esteira.
+Esse mecanismo, para o nosso caso, é um alimentador vibratório, cuja função é manter uma quantidade adequada de grãos sobre a esteira.
 
 Esse controle evita duas condições principais:
 
