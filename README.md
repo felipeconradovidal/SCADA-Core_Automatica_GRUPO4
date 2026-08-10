@@ -87,7 +87,7 @@ O processo pode ser dividido nas seguintes etapas:
 
 O fluxo básico do processo é:
 
-<img width="1688" height="1388" alt="Diagrama em branco (1)" src="https://github.com/user-attachments/assets/06c6c9b1-2930-44cc-9538-5c574e811cea" />
+<img width="1254" height="1254" alt="FLUXOGRAMA" src="https://github.com/user-attachments/assets/e753979e-70dd-4507-a837-346ee56f6ca5" />
 
 ---
 
