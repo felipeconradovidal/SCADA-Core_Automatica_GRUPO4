@@ -34,8 +34,7 @@ Essa estrutura permite que cada condição física seja representada por uma exp
 
 A tabela a seguir apresenta o conjunto de variáveis provenientes do sistema de visão computacional utilizado na classificação automática dos grãos (arroz).
 
-
-
+<img width="1050" height="1498" alt="ImagemCerta" src="https://github.com/user-attachments/assets/7302e0f3-1381-4481-b189-e45eb77b7756" />
 
 ---
 
