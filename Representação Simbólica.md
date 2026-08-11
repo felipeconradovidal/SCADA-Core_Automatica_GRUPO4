@@ -54,7 +54,7 @@ A tabela a seguir apresenta o conjunto de variáveis provenientes do sistema de 
 
 A parte a seguir apresenta o catálogo de tags referente aos sensores, atuadores, dispositivos de segurança, motores e sinalizadores presentes na planta automatizada. Contudo, por apresentar um conteúdo bastante importante e detalhado, foi criado um arquivo exclusivamente para essa parte. Tal documento pode ser acessado com o link abaixo: 
 
-
+[📘 Variáveis do Processo](./Variáveis%20Do%20Processo.md)
 
 ---
 
