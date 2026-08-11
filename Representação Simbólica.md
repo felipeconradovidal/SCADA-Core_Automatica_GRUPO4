@@ -30,17 +30,29 @@ Essa estrutura permite que cada condição física seja representada por uma exp
 
 ---
 
-# Tabela 1 – Variáveis da Visão Computacional (ISA 5.1)
+# Parte 1 – Variáveis da Visão Computacional (ISA 5.1)
 
 A tabela a seguir apresenta o conjunto de variáveis provenientes do sistema de visão computacional utilizado na classificação automática dos grãos (arroz).
 
-<img width="1050" height="1498" alt="ImagemCerta" src="https://github.com/user-attachments/assets/7302e0f3-1381-4481-b189-e45eb77b7756" />
+# Tabela 1 – Variáveis da Visão Computacional (ISA 5.1)
+
+| Tag Instrumentativo | Tipo de dispositivo | Variável física | Proposição lógica | Estado 0 | Estado 1 |
+| :------------------ | :------------------ | :-------------- | :---------------- | :------- | :------- |
+| **CV-101** | Câmera + IA | Cor Ideal | CV-101: Cor dentro do padrão ideal | Cor fora do padrão ideal | Cor dentro do padrão ideal |
+| **CV-102** | Câmera + IA | Cor Secundária | CV-102: Cor dentro do padrão secundário | Cor fora do padrão secundário | Cor dentro do padrão secundário |
+| **CV-103** | Câmera + IA | Tamanho Ideal | CV-103: Tamanho dentro do padrão ideal | Tamanho fora do padrão ideal | Tamanho dentro do padrão ideal |
+| **CV-104** | Câmera + IA | Tamanho Secundário | CV-104: Tamanho dentro do padrão secundário | Tamanho fora do padrão secundário | Tamanho dentro do padrão secundário |
+| **CV-105** | Câmera + IA | Formato Ideal | CV-105: Formato dentro do padrão ideal | Formato fora do padrão ideal | Formato dentro do padrão ideal |
+| **CV-106** | Câmera + IA | Formato Secundário | CV-106: Formato dentro do padrão secundário | Formato fora do padrão secundário | Formato dentro do padrão secundário |
+| **CV-107** | Câmera + IA | Dano | CV-107: Possui dano | Sem dano | Com dano |
+| **CV-108** | Câmera + IA | Praga | CV-108: Possui praga | Sem praga | Com praga |
+| **CV-109** | Câmera + IA | Impureza | CV-109: Contém impureza | Sem impureza | Com impureza |
 
 ---
 
-# Tabela 2 – Variáveis do Processo (ISA 5.1)
+# Parte 2 – Variáveis do Processo (ISA 5.1)
 
-A tabela a seguir apresenta o catálogo de tags referente aos sensores, atuadores, dispositivos de segurança, motores e sinalizadores presentes na planta automatizada.
+A parte a seguir apresenta o catálogo de tags referente aos sensores, atuadores, dispositivos de segurança, motores e sinalizadores presentes na planta automatizada. Contudo, por apresentar um conteúdo bastante importante e detalhado, foi criado um arquivo exclusivamente para essa parte. Tal documento pode ser acessado com o link abaixo: 
 
 
 
