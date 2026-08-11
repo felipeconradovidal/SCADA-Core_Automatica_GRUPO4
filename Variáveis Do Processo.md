@@ -157,3 +157,77 @@ O funcionamento integrado da planta automatizada segue uma sequência encadeada 
 9. **Supervisão Contínua:** Durante todo o percurso, o SCADA atualiza as variáveis do sinóptico e processa a **Taxa de Rejeição Total (SCADA)**, garantindo controle, diagnóstico e rastreabilidade total do processo de seleção de grãos.
 
 ---
+
+flowchart TD
+    %% Estilização do Diagrama
+    classDef equipamento fill:#2b3e50,stroke:#1a252f,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef decisao fill:#d35400,stroke:#a04000,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef scada fill:#27ae60,stroke:#1e8449,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef variavel fill:#ecf0f1,stroke:#bdc3c7,stroke-width:1px,color:#2c3e50,font-size:11px;
+    classDef destino fill:#2980b9,stroke:#1b4f72,stroke-width:2px,color:#ffffff,font-weight:bold;
+
+    %% Camada Superior de Supervisão SCADA
+    subgraph CAMADA_SUPERVISAO [" Camada de Supervisão & Controle (SCADA / PLC) "]
+        SCADA["SCADA / PLC<br>• Intertravamento: Permissão Geral<br>• KPI: Taxa de Rejeição Total"]:::scada
+    end
+
+    %% Fluxo Físico do Processo
+    subgraph FLUXO_PROCESSO [" Fluxo Físico do Processo "]
+        E1["1. Entrada dos Grãos"] --> E2["2. Funil de Alimentação"]:::equipamento
+        
+        VAR_LIT101["[LIT-101] Nível Funil"]:::variavel --- E2
+        
+        E2 --> E3["3. Alimentador Vibratório"]:::equipamento
+        VAR_CMD_ALIM["[Comando Alimentador] (Driver/Inversor)"]:::variavel --- E3
+        
+        E3 --> E4["4. Esteira Transportadora"]:::equipamento
+        VAR_ST201["[ST-201] Velocidade Real"]:::variavel --- E4
+        VAR_JI201["[JI-201] Sobrecarga Motor"]:::variavel --- E4
+        
+        E4 --> E5["5. Pesagem Dinâmica"]:::equipamento
+        VAR_WT301["[WT-301] Massa Instantânea"]:::variavel --- E5
+        VAR_FT301["[FT-301] Vazão Mássica (Calculada)"]:::variavel --- E5
+        
+        E5 --> E6["6. Inspeção por Visão Computacional"]:::equipamento
+        VAR_XS401["[XS-401] Trigger Óptico"]:::variavel --- E6
+        VAR_KSA401["[KSA-401] Status da Câmera"]:::variavel --- E6
+        
+        E6 --> D7{"7. Decision / Classificação"}:::decisao
+    end
+
+    %% Ramificações da Classificação e Atuação
+    VAR_KXA501["[KXA-501] Grão Categoria A"]:::variavel --- D7
+    VAR_KXA503["[KXA-503] Grão Categoria C"]:::variavel --- D7
+
+    D7 -- "Aprovado (KXA-501 = 1)" --> DEST_A["Produto A<br>(Segue na Esteira)"]:::destino
+    D7 -- "Comercial (KXA-501=0 e KXA-503=0)" --> DEST_B["Produto B<br>(Desvio Secundário)"]:::destino
+    D7 -- "Rejeito (KXA-503 = 1)" --> E8["8. Ejeção Pneumática"]:::equipamento
+
+    subgraph SISTEMA_PNEUMATICO [" Sistema Pneumático "]
+        E8
+        VAR_PT601["[PT-601] Pressão da Linha"]:::variavel --- E8
+        VAR_PAL601["[PAL-601] Alarme Pressão Baixa"]:::variavel --- E8
+        VAR_FY603["[FY-603] Comando Válvula Sopro"]:::variavel --- E8
+        VAR_ZSH601["[ZSH-601] Avanço do Atuador"]:::variavel --- E8
+    end
+
+    E8 --> DEST_C["Produto C<br>(Recipiente de Rejeito)"]:::destino
+    VAR_LIT703["[LIT-703] Nível Recipiente Rejeito"]:::variavel --- DEST_C
+
+    subgraph COLETA [" 9. Coleta dos Produtos "]
+        DEST_A --> COLET_A["Recipiente Categoria A"]:::destino
+        DEST_B --> COLET_B["Recipiente Categoria B"]:::destino
+        DEST_C --> COLET_C["Recipiente Categoria C"]:::destino
+    end
+
+    %% Conexões de Telemetria e Controle SCADA (Linhas Tracejadas)
+    SCADA -.- VAR_LIT101
+    SCADA -.- VAR_CMD_ALIM
+    SCADA -.- VAR_ST201
+    SCADA -.- VAR_JI201
+    SCADA -.- VAR_FT301
+    SCADA -.- VAR_KSA401
+    SCADA -.- VAR_KXA501
+    SCADA -.- VAR_KXA503
+    SCADA -.- VAR_PAL601
+    SCADA -.- VAR_LIT703
