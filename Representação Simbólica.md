@@ -34,7 +34,7 @@ Essa estrutura permite que cada condição física seja representada por uma exp
 
 A tabela a seguir apresenta o conjunto de variáveis provenientes do sistema de visão computacional utilizado na classificação automática dos grãos (arroz).
 
-# Tabela 1 – Variáveis da Visão Computacional (ISA 5.1)
+# Tabela 1 – Variáveis da Visão Computacional
 
 | Tag Instrumentativo | Tipo de dispositivo | Variável física | Proposição lógica | Estado 0 | Estado 1 |
 | :------------------ | :------------------ | :-------------- | :---------------- | :------- | :------- |
