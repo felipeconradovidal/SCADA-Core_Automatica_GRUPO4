@@ -1,3 +1,5 @@
+# Variáveis do Processo
+
 Nesta etapa do projeto foi realizado o **mapeamento simbólico das variáveis do processo**, convertendo sinais provenientes de sensores, atuadores e do sistema de visão computacional em **proposições lógicas binárias**. O objetivo é estabelecer uma representação formal do processo industrial, permitindo que cada condição física seja interpretada pelo sistema de controle como uma variável lógica (`0` ou `1`).
 
 A padronização adotada segue a **norma ISA 5.1 (Instrumentation Symbols and Identification)**, responsável por definir convenções para identificação de instrumentos, sensores, atuadores e dispositivos de controle em sistemas industriais. A utilização dessa norma garante organização, rastreabilidade e compatibilidade entre a lógica de controle, o CLP, o sistema supervisório (SCADA) e os módulos de visão computacional.
