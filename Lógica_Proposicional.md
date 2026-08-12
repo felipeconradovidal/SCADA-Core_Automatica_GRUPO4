@@ -27,7 +27,7 @@ Cada regra é apresentada como uma expressão lógica formal (usando os operador
 | `p → q` | Condicional (SE... ENTÃO) |
 | `p ↔ q` | Bicondicional (SE E SOMENTE SE) |
 | `p_TAG` | Proposição de **entrada** (sensor/status observado) |
-| `c_TAG` | Proposição de **saída/comando**, calculada pelo PLC |
+| `c_TAG` | Proposição de **saída/comando**, calculada pelo CLP |
 
 Convenção de estado: em todas as proposições, **1 (Verdadeiro)** corresponde ao "Estado 1" definido na tabela de variáveis, e **0 (Falso)** ao "Estado 0".
 
@@ -35,7 +35,7 @@ Convenção de estado: em todas as proposições, **1 (Verdadeiro)** corresponde
 
 # 2. Proposições Derivadas de Variáveis Analógicas
 
-Variáveis analógicas (`LIT-101`, `ST-201`, `WT-301`, `FT-301`, `PT-601`, `LIT-703`) não são proposições por si — elas alimentam **comparadores de limiar** no PLC, que geram as proposições binárias efetivamente usadas na lógica de controle. Isso mantém a tabela de variáveis fiel à ISA 5.1 (que não teria como listar limiares específicos) e concentra as definições de setpoint aqui, onde elas podem evoluir sem reabrir o catálogo de tags.
+Variáveis analógicas (`LIT-101`, `ST-201`, `WT-301`, `FT-301`, `PT-601`, `LIT-703`) não são proposições por si — elas alimentam **comparadores de limiar** no CLP, que geram as proposições binárias efetivamente usadas na lógica de controle. Isso mantém a tabela de variáveis fiel à ISA 5.1 (que não teria como listar limiares específicos) e concentra as definições de setpoint aqui, onde elas podem evoluir sem reabrir o catálogo de tags.
 
 ## 2.1 Nível do Funil de Recepção (LIT-101)
 
@@ -169,7 +169,7 @@ O ejetor deve atuar apenas quando o grão rejeitado atinge fisicamente a posiç�
 c_FY603 ↔ ( p_C ∧ p_POS603 ∧ ¬p_PAL601 )
 ```
 
-Onde `p_POS603` é a proposição — gerada pelo temporizador/*shift register* do PLC — que indica "grão rejeitado está na posição do ejetor agora". Essa variável ainda não tem tag própria no catálogo; sugiro criarmos algo como `ZC-603` (posição calculada) na próxima revisão da tabela.
+Onde `p_POS603` é a proposição — gerada pelo temporizador/*shift register* do CLP — que indica "grão rejeitado está na posição do ejetor agora". Essa variável ainda não tem tag própria no catálogo; sugiro criarmos algo como `ZC-603` (posição calculada) na próxima revisão da tabela.
 
 **Leitura:** a válvula é acionada **se e somente se** o grão à frente do bocal for Categoria C **E** ele estiver na posição correta **E** não houver alarme de pressão baixa.
 
@@ -201,7 +201,7 @@ Note que o bloqueio por reservatório cheio se propaga naturalmente pela cadeia 
 c_PERM ↔ ( ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC703 )
 ```
 
-Isso é consistente com o texto do descritivo ("o PLC interrompe preventivamente a alimentação do processo") e evita criar uma segunda lógica de bloqueio paralela ao intertravamento principal — sugiro adotarmos essa versão consolidada de `c_PERM` daqui para frente (substitui a da Seção 3).
+Isso é consistente com o texto do descritivo ("o CLP interrompe preventivamente a alimentação do processo") e evita criar uma segunda lógica de bloqueio paralela ao intertravamento principal — sugiro adotarmos essa versão consolidada de `c_PERM` daqui para frente (substitui a da Seção 3).
 
 ---
 
@@ -218,7 +218,7 @@ p_B      ↔ ¬p_A ∧ ¬p_C
 c_FY603  ↔ p_C ∧ p_POS603 ∧ ¬p_PAL601
 ```
 
-Essa cadeia cobre, em lógica proposicional pura, todo o fluxo descrito no README (recepção → alimentação → transporte → inspeção → classificação → ejeção), servindo de base direta para:
+Essa cadeia cobre, em lógica proposicional pura, todo o fluxo descrito no README (recepção → alimentação → transporte → inspeção → classificação → ejeção → monitoramento), servindo de base direta para:
 
 - **Diagrama Ladder / lista de instruções** no CLP (cada `∧`, `∨`, `¬` mapeia 1:1 para contatos NA/NF e bobinas);
 - **Tabelas-verdade de validação** antes da implementação;

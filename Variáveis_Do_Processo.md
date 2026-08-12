@@ -10,18 +10,18 @@
 | **ST-201** | Encoder incremental | Velocidade | Medição contínua da velocidade real da esteira | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_MOV201`, `p_VB201`, `p_VA201`) |
 | **JI-201** | Relé de sobrecarga digital | Corrente elétrica | Sobrecarga no motor da esteira | Motor OK | Sobrecarga detectada | `p_JI201` |
 | **WT-301** | Célula de carga com transmissor | Massa | Medição contínua de massa na seção de pesagem | N/A (Analógico) | N/A (Analógico) | — (analógica; usada no cálculo de `FT-301`) |
-| **FT-301** | Variável calculada (PLC) | Vazão mássica | Taxa instantânea de processamento de grãos | N/A (Analógico) | N/A (Analógico) | — (analógica/calculada) |
+| **FT-301** | Variável calculada (CLP) | Vazão mássica | Taxa instantânea de processamento de grãos | N/A (Analógico) | N/A (Analógico) | — (analógica/calculada) |
 | **XS-401** | Sensor fotoelétrico de barreira | Presença | Trigger de captura de imagem para a câmera | Sem grão no ponto | Grão detectado | `p_XS401` |
 | **KSA-401** | Câmera industrial / Software | Não se aplica — variável lógica/calculada | Status de comunicação e operação da câmera | Câmera OFF / Falha | Câmera Pronta / OK | `p_KSA401` |
 | **KXA-501** | Algoritmo de Visão Computacional | Não se aplica — variável lógica/calculada | Grão inspecionado classificado como Categoria A | Falso | Verdadeiro | `p_A` (≡ KXA-501) |
 | **KXA-502** | Algoritmo de Visão Computacional | Não se aplica — variável lógica/calculada | Grão inspecionado classificado como Categoria B | Falso | Verdadeiro | `p_B` (≡ KXA-502) |
 | **KXA-503** | Algoritmo de Visão Computacional | Não se aplica — variável lógica/calculada | Grão inspecionado classificado como Categoria C | Falso | Verdadeiro | `p_C` (≡ KXA-503) |
 | **PT-601** | Transmissor de pressão piezoelétrico | Pressão | Medição contínua da pressão da linha pneumática | N/A (Analógico) | N/A (Analógico) | — (analógica; usada no cálculo de `PAL-601`) |
-| **PAL-601** | Pressostato digital / PLC | Pressão | Pressão de ar comprimido abaixo do mínimo operacional | Pressão normal | Pressão baixa | `p_PAL601` |
+| **PAL-601** | Pressostato digital / CLP | Pressão | Pressão de ar comprimido abaixo do mínimo operacional | Pressão normal | Pressão baixa | `p_PAL601` |
 | **FY-603** | Válvula solenoide ultrarrápida | Não se aplica — variável lógica/calculada | Comando de disparo do ejetor da Categoria C | Válvula fechada | Válvula acionada | `c_FY603` |
 | **ZSH-601** | Sensor magnético de cilindro | Posição | Confirmação física de avanço do atuador pneumático | Atuador recuado | Atuador avançado | `p_ZSH601` |
 | **LIT-703** | Sensor de nível ultrassônico | Nível | Medição contínua do nível no recipiente Categoria C | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NA703`, `p_NC703`) |
-| **N/A** | Lógica de intertravamento (PLC) | Não se aplica — variável lógica/calculada | Permissão geral para operação da planta | Condição impeditiva | Planta liberada | `c_PERM` |
+| **N/A** | Lógica de intertravamento (CLP) | Não se aplica — variável lógica/calculada | Permissão geral para operação da planta | Condição impeditiva | Planta liberada | `c_PERM` |
 | **N/A** | Variável calculada (SCADA) | Não se aplica — variável lógica/calculada | Taxa de rejeição total (Categoria C) em relação ao total | N/A (Analógico) | N/A (Analógico) | — (analógica/calculada, %) |
 # Descritivo do Processo
 
@@ -31,7 +31,7 @@ A etapa de recepção e alimentação é o ponto de entrada da matéria-prima na
 
 O correto funcionamento e a continuidade do processo produtivo dependem diretamente do monitoramento constante do volume contido no funil. Para isso, o sistema utiliza o transmissor de nível ultrassônico **LIT-101**, que realiza a medição contínua da altura da camada de grãos.
 
-Essa medição contínua é fundamental para a estratégia de controle da planta. Caso o funil atinja níveis excessivamente baixos, o processo corre o risco de operar a seco, resultando em descontinuidade no abastecimento da esteira e falhas no ritmo de classificação. Em contrapartida, um volume elevado sem controle pode levar ao transbordo de grãos. Dessa forma, a informação fornecida pelo **LIT-101** é processada pelo PLC para garantir a liberação ou o bloqueio da etapa subsequente de alimentação, além de alimentar o sinóptico do SCADA com a indicação precisa do volume disponível.
+Essa medição contínua é fundamental para a estratégia de controle da planta. Caso o funil atinja níveis excessivamente baixos, o processo corre o risco de operar a seco, resultando em descontinuidade no abastecimento da esteira e falhas no ritmo de classificação. Em contrapartida, um volume elevado sem controle pode levar ao transbordo de grãos. Dessa forma, a informação fornecida pelo **LIT-101** é processada pelo CLP para garantir a liberação ou o bloqueio da etapa subsequente de alimentação, além de alimentar o sinóptico do SCADA com a indicação precisa do volume disponível.
 
 ---
 
@@ -51,7 +51,7 @@ A esteira transportadora é o elemento central de movimentação e integração 
 
 A velocidade da esteira precisa ser rigorosamente controlleda e monitorada. Para essa medição, utiliza-se o encoder incremental **ST-201**, acoplado ao eixo do motor, que fornece ao PLC o valor em tempo real da velocidade real de deslocamento da correia. A manutenção da velocidade no setpoint correto é vital para a dinâmica da planta: se a velocidade estiver abaixo do especificado, o fluxo de produção cai e o tempo de trânsito aumenta; se estiver acima, a captura de imagem pelo sistema de visão pode sofrer desfoque por movimento (*motion blur*) e os atuadores de ejeção não responderão a tempo.
 
-A sincronização espacial e temporal do processo baseia-se na velocidade contínua lida pelo **ST-201**. O PLC utiliza esse sinal para calcular o tempo exato que um determinado grão leva desde a passagem pela câmera de inspeção até atingir a posição dos ejetores pneumáticos.
+A sincronização espacial e temporal do processo baseia-se na velocidade contínua lida pelo **ST-201**. O CLP utiliza esse sinal para calcular o tempo exato que um determinado grão leva desde a passagem pela câmera de inspeção até atingir a posição dos ejetores pneumáticos.
 
 Para a proteção da mecânica e do motor da esteira, o sistema conta com a variável **JI-201** (relé de sobrecarga digital). Caso ocorra um travamento mecânico na correia ou sobrecarga elétrica no motor, a variável **JI-201** muda de estado (Estado 1), provocando o desligamento imediato do acionamento e gerando um alarme crítico no SCADA para diagnóstico operacional.
 
@@ -61,14 +61,14 @@ Para a proteção da mecânica e do motor da esteira, o sistema conta com a vari
 
 Após a alimentação e estabilização na esteira, os grãos passam por uma seção dedicada à pesagem dinâmica contínua. O objetivo desta etapa é determinar a massa do produto que transita pelo processo para acompanhamento de produção, rendimento e métricas operacionais.
 
-A medição física direta é realizada por uma célula de carga com transmissor integrado, representada pela tag **WT-301**, que envia ao PLC o valor da massa instantânea incidente sobre a seção da balança.
+A medição física direta é realizada por uma célula de carga com transmissor integrado, representada pela tag **WT-301**, que envia ao CLP o valor da massa instantânea incidente sobre a seção da balança.
 
-A partir do valor analógico de massa fornecido pelo **WT-301** e da velocidade de deslocamento do material obtida pelo encoder, o algoritmo do PLC efetua o cálculo da vazão mássica instantânea de processamento, representada pela variável **FT-301**.
+A partir do valor analógico de massa fornecido pelo **WT-301** e da velocidade de deslocamento do material obtida pelo encoder, o algoritmo do CLP efetua o cálculo da vazão mássica instantânea de processamento, representada pela variável **FT-301**.
 
 É fundamental diferenciar as duas grandezas nesta etapa:
 
 * **Massa Instantânea (WT-301):** grandeza física medida diretamente pelo sensor de força (célula de carga).
-* **Vazão Mássica (FT-301):** grandeza calculada pelo PLC por meio da integração do peso em relação ao tempo e velocidade da correia, expressa em unidades de taxa de produção (por exemplo, kg/h).
+* **Vazão Mássica (FT-301):** grandeza calculada pelo CLP por meio da integração do peso em relação ao tempo e velocidade da esteira, expressa em unidades de taxa de produção (por exemplo, kg/h).
 
 O SCADA utiliza a variável calculada **FT-301** para apresentar ao operador o gráfico de tendência de produtividade em tempo real, permitindo identificar oscilações no fornecimento de matéria-prima e avaliar a eficiência operacional do lote em processamento.
 
@@ -78,7 +78,7 @@ O SCADA utiliza a variável calculada **FT-301** para apresentar ao operador o g
 
 À medida que os grãos avançam pela esteira transportadora, eles entram na zona de inspeção por visão computacional. Esta etapa é responsável por analisar individualmente as características ópticas e geométrico-superficiais de cada grão para determinar sua qualidade.
 
-O processo de aquisição de imagem é iniciado pelo sensor fotoelétrico de barreira **XS-401**. Posicionado no ponto de entrada do túnel de inspeção, o sensor opera como um trigger discreto: ao detectar a passagem de um grão, seu estado muda de 0 para 1, enviando um pulso instantâneo para a câmera industrial e para o PLC. Esse pulso garante que a imagem seja capturada exatamente no instante em que o grão está posicionado sob o campo de visão otimizado e sob a iluminação controlada.
+O processo de aquisição de imagem é iniciado pelo sensor fotoelétrico de barreira **XS-401**. Posicionado no ponto de entrada do túnel de inspeção, o sensor opera como um trigger discreto: ao detectar a passagem de um grão, seu estado muda de 0 para 1, enviando um pulso instantâneo para a câmera industrial e para o CLP. Esse pulso garante que a imagem seja capturada exatamente no instante em que o grão está posicionado sob o campo de visão otimizado e sob a iluminação controlada.
 
 A prontidão e integridade do sistema de captura são monitoradas continuamente pela variável **KSA-401** (Status do Sistema de Visão / Câmera). Esta variável reflete o estado de comunicação da câmera, o funcionamento do algoritmo de processamento e a disponibilidade de hardware. Se a variável **KSA-401** indicar falha (Estado 0), a planta entra em condição de alerta, impedindo a passagem de grãos sem a devida classificação.
 
@@ -94,13 +94,13 @@ A etapa de classificação converte a análise realizada pela visão computacion
 * **Categoria B (Produto Comercial / Secundário):** grãos com pequenas variações estéticas ou de tamanho, porém sem contaminação ou danos graves.
 * **Categoria C (Produto Rejeitado / Descarte):** grãos com severa alteração de cor, presença de pragas, trincados, mofados ou que sejam impurezas (pedras, palha).
 
-Nesta arquitetura de controle, a classificação é representada por variáveis de resultado lógicas geradas pelo algoritmo de visão e transmitidas ao PLC:
+Nesta arquitetura de controle, a classificação é representada por variáveis de resultado lógicas geradas pelo algoritmo de visão e transmitidas ao CLP:
 
 * **KXA-501 (Grão Categoria A):** assume o estado lógico 1 quando o grão analisado atende aos critérios de aprovação integral.
 * **KXA-502 (Grão Categoria B):** assume o estado lógico 1 quando o grão analisado não atende aos critérios de A, nem de C.
 * **KXA-503 (Grão Categoria C):** assume o estado lógico 1 quando o grão é diagnosticado como defeituoso ou rejeito.
 
-Assim que a decisão lógica é tomada, o registro da classificação do grão entra em uma fila de deslocamento (*shift register*) dentro do PLC, vinculada ao rastreamento do tempo e da velocidade da esteira obtida pelo encoder, preparando o disparo da próxima etapa: a ejeção pneumática.
+Assim que a decisão lógica é tomada, o registro da classificação do grão entra em uma fila de deslocamento (*shift register*) dentro do CLP, vinculada ao rastreamento do tempo e da velocidade da esteira obtida pelo encoder, preparando o disparo da próxima etapa: a ejeção pneumática.
 
 ---
 
@@ -112,7 +112,7 @@ A linha principal de suprimento de ar comprimido é monitorada pelo transmissor 
 
 Quando um grão classificado como Categoria C (**KXA-503** = 1) atinge a posição exata do bocal de desvio na esteira (calculada pelo tempo de trânsito), o PLC aciona o comando da válvula solenoide ultrarrápida **FY-603**. A abertura energizada da válvula libera um jato de ar comprimido de curta duração que ejeta o grão descartado para fora da esteira.
 
-Para garantir que a ação física de ejeção realmente ocorreu e não houve falha elétrica na bobina da solenoide ou travamento mecânico da válvula/cilindro, o sistema conta com a confirmação dada pelo sensor magnético de posição **ZSH-601** (confirmação física de avanço do atuador). A leitura do **ZSH-601** permite ao PLC verificar se o atuador respondeu ao comando no tempo esperado, fornecendo o diagnóstico de falha de acionamento em tempo real.
+Para garantir que a ação física de ejeção realmente ocorreu e não houve falha elétrica na bobina da solenoide ou travamento mecânico da válvula/cilindro, o sistema conta com a confirmação dada pelo sensor magnético de posição **ZSH-601** (confirmação física de avanço do atuador). A leitura do **ZSH-601** permite ao CLP verificar se o atuador respondeu ao comando no tempo esperado, fornecendo o diagnóstico de falha de acionamento em tempo real.
 
 ---
 
@@ -125,17 +125,17 @@ Após a etapa de ejeção, os grãos devidamente separados seguem para os seus r
 
 O recipiente de recepção de rejeito exige monitoramento contínuo para prevenir o extravasamento de produto descartado sobre o chão de fábrica. Esse acompanhamento é realizado pelo sensor de nível ultrassônico **LIT-703**, instalado no topo do reservatório de Categoria C.
 
-À medida que o recipiente é preenchido, o valor medido pelo **LIT-703** cresce continuamente de 0 a 100%. Quando a capacidade máxima operacional é atingida, o SCADA gera um alarme visual e sonoro de recipiente cheio. Essa indicação orienta a equipe de operação sobre a necessidade de substituição ou esvaziamento do reservatório. Caso o operador não realize a troca em tempo hábil e o nível atinja a condição crítica, o PLC interrompe preventivamente a alimentação do processo para evitar o acúmulo desordenado de rejeito na área de desvio.
+À medida que o recipiente é preenchido, o valor medido pelo **LIT-703** cresce continuamente de 0 a 100%. Quando a capacidade máxima operacional é atingida, o SCADA gera um alarme visual e sonoro de recipiente cheio. Essa indicação orienta a equipe de operação sobre a necessidade de substituição ou esvaziamento do reservatório. Caso o operador não realize a troca em tempo hábil e o nível atinja a condição crítica, o CLP interrompe preventivamente a alimentação do processo para evitar o acúmulo desordenado de rejeito na área de desvio.
 
 ---
 
 ## 9. Supervisão pelo SCADA
 
-O sistema de supervisão e aquisição de dados (SCADA) atua como o ambiente central de interface homem-máquina (IHM) e inteligência operacional da planta. Ele consolida todas as variáveis físicas transmitidas pelos instrumentos e as variáveis calculadas geradas pelo PLC em um sinóptico dinâmico e amigável.
+O sistema de supervisão e aquisição de dados (SCADA) atua como o ambiente central de interface homem-máquina (IHM) e inteligência operacional da planta. Ele consolida todas as variáveis físicas transmitidas pelos instrumentos e as variáveis calculadas geradas pelo CLP em um sinóptico dinâmico e amigável.
 
 Através do SCADA, o operador monitora em tempo real:
 
-* **Estado Geral da Planta:** por meio da variável **Permissão Geral de Operação (Intertravamento do PLC)**, que indica se as condições de segurança (emergência, pressão de ar **PAL-601**, motor da esteira **JI-201** e visão **KSA-401**) estão satisfeitas para permitir a partida do processo (Estado 1).
+* **Estado Geral da Planta:** por meio da variável **Permissão Geral de Operação (Intertravamento do CLP)**, que indica se as condições de segurança (emergência, pressão de ar **PAL-601**, motor da esteira **JI-201** e visão **KSA-401**) estão satisfeitas para permitir a partida do processo (Estado 1).
 * **Fluxo de Processamento:** visualização gráfica do nível do funil (**LIT-101**), velocidade da esteira (**ST-201**), massa instantânea na balança (**WT-301**) e a taxa de vazão mássica em tempo real (**FT-301**).
 * **Diagnóstico e Alarmes:** exibição em painel de eventos de falhas elétricas por sobrecarga no motor (**JI-201** = 1), baixa pressão na linha pneumática (**PAL-601** = 1) e necessidade de intervenção na coleta pelo nível elevado no reservatório de rejeito (**LIT-703**).
 * **Métricas de Produtividade e Qualidade:** apresentação da variável calculada **Taxa de Rejeição Total (SCADA)**, que correlaciona continuamente os grãos computados como rejeito (**KXA-503**) frente ao volume total processado. Esse indicador permite acompanhar desvios de qualidade do lote recebido na recepção.
@@ -149,13 +149,21 @@ O SCADA armazena o histórico contínuo das variáveis em banco de dados, possib
 O funcionamento integrado da planta automatizada segue uma sequência encadeada e estritamente sincronizada:
 
 1. **Abastecimento Inicial:** Os grãos chegam à planta e são despejados no funil de recepção. O transmissor **LIT-101** registra o nível de produto armazenado.
-2. **Verificação de Permissões:** O operador solicita a partida da planta via SCADA. O PLC valida a **Permissão Geral de Operação (Intertravamento)**, verificando se não há emergências ativas, se o motor da esteira está íntegro (**JI-201** = 0), se a pressão de ar está normal (**PAL-601** = 0) e se a câmera está operacional (**KSA-401** = 1).
+
+2. **Verificação de Permissões:** O operador solicita a partida da planta via SCADA. O CLP valida a **Permissão Geral de Operação (Intertravamento)**, verificando se não há emergências ativas, se o motor da esteira está íntegro (**JI-201** = 0), se a pressão de ar está normal (**PAL-601** = 0) e se a câmera está operacional (**KSA-401** = 1).
+
 3. **Partida do Transporte e Alimentação:** A esteira transportadora é acionada, e sua velocidade real é monitorada continuamente pelo encoder **ST-201**. Em seguida, o **Comando do Alimentador Vibratório** é ativado, iniciando a dosagem controlada e contínua dos grãos sobre a esteira em movimento.
-4. **Pesagem Dinâmica:** Os grãos avançam sobre a esteira e passam pela mesa de pesagem. A célula de carga **WT-301** mede a massa instantânea, e o PLC calcula continuamente a vazão mássica de processamento **FT-301**, disponibilizando o dado no SCADA.
+
+4. **Pesagem Dinâmica:** Os grãos avançam sobre a esteira e passam pela mesa de pesagem. A célula de carga **WT-301** mede a massa instantânea, e o CLP calcula continuamente a vazão mássica de processamento **FT-301**, disponibilizando o dado no SCADA.
+
 5. **Detecção e Disparo da Inspeção:** Ao entrarem na estação de visão, a passagem de cada grão é detectada pelo sensor fotoelétrico **XS-401**. O disparo instantâneo aciona a captura da imagem pela câmera industrial.
+
 6. **Processamento da Imagem e Classificação:** O algoritmo de visão analisa a imagem capturada e toma a decisão lógica de qualidade: se o grão for aprovado, ativa **KXA-501**; se for identificado defeito, ativa **KXA-503**.
-7. **Rastreamento e Ejeção Pneumática:** A decisão de classificação entra no registrador de deslocamento do PLC. O sistema acompanha a posição física do grão com base na velocidade fornecida pelo encoder **ST-201**. Ao atingir o ponto de ejeção, se a decisão for de rejeição (**KXA-503** = 1), o PLC aciona a válvula solenoide **FY-603**. O jacto de ar comprimido ejeta o grão defeituoso, enquanto a chave **ZSH-601** confirma a atuação física do cilindro.
+
+7. **Rastreamento e Ejeção Pneumática:** A decisão de classificação entra no registrador de deslocamento do CLP. O sistema acompanha a posição física do grão com base na velocidade fornecida pelo encoder **ST-201**. Ao atingir o ponto de ejeção, se a decisão for de rejeição (**KXA-503** = 1), o CLP aciona a válvula solenoide **FY-603**. O jacto de ar comprimido ejeta o grão defeituoso, enquanto a chave **ZSH-601** confirma a atuação física do cilindro.
+
 8. **Coleta e Monitoramento de Silos:** Os grãos ejetados caem no reservatório de rejeito (Categoria C), cujo volume é monitorado em tempo real pelo sensor de nível **LIT-703**. Os grãos aprovados seguem na esteira e descarregam no reservatório final (Categoria A).
+
 9. **Supervisão Contínua:** Durante todo o percurso, o SCADA atualiza as variáveis do sinóptico e processa a **Taxa de Rejeição Total (SCADA)**, garantindo controle, diagnóstico e rastreabilidade total do processo de seleção de grãos.
 
 ---
