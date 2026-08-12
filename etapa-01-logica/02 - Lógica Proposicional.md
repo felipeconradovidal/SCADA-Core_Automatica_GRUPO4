@@ -1,4 +1,4 @@
-# Parte 3 – Lógica Proposicional do Processo
+# Lógica Proposicional do Processo
 
 ## Da Representação Simbólica às Regras de Decisão do SCADA-Core Automática
 
