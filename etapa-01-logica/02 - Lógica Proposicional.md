@@ -4,7 +4,7 @@
 
 ## Objetivo
 
-Este documento dá continuidade à Parte 2, utilizando os símbolos lógicos definidos na tabela de variáveis (**Representação_Simbólica.md** e **Variáveis_Do_Processo.md**) para construir, em **lógica proposicional clássica**, as regras que vão governar:
+Este documento dá continuidade à Parte 2, utilizando os símbolos lógicos definidos na tabela de variáveis para construir, em **lógica proposicional clássica**, as regras que vão governar:
 
 1. A geração de proposições binárias a partir de variáveis analógicas (comparadores de limiar);
 2. O intertravamento de segurança e a Permissão Geral de Operação;
