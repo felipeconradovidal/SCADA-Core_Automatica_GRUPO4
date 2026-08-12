@@ -14,6 +14,7 @@
 | **XS-401** | Sensor fotoelétrico de barreira | Presença | Trigger de captura de imagem para a câmera | Sem grão no ponto | Grão detectado | `p_XS401` |
 | **KSA-401** | Câmera industrial / Software | Não se aplica — variável lógica/calculada | Status de comunicação e operação da câmera | Câmera OFF / Falha | Câmera Pronta / OK | `p_KSA401` |
 | **KXA-501** | Algoritmo de Visão Computacional | Não se aplica — variável lógica/calculada | Grão inspecionado classificado como Categoria A | Falso | Verdadeiro | `p_A` (≡ KXA-501) |
+| **KXA-502** | Algoritmo de Visão Computacional | Não se aplica — variável lógica/calculada | Grão inspecionado classificado como Categoria B | Falso | Verdadeiro | `p_B` (≡ KXA-502) |
 | **KXA-503** | Algoritmo de Visão Computacional | Não se aplica — variável lógica/calculada | Grão inspecionado classificado como Categoria C | Falso | Verdadeiro | `p_C` (≡ KXA-503) |
 | **PT-601** | Transmissor de pressão piezoelétrico | Pressão | Medição contínua da pressão da linha pneumática | N/A (Analógico) | N/A (Analógico) | — (analógica; usada no cálculo de `PAL-601`) |
 | **PAL-601** | Pressostato digital / PLC | Pressão | Pressão de ar comprimido abaixo do mínimo operacional | Pressão normal | Pressão baixa | `p_PAL601` |
@@ -96,9 +97,8 @@ A etapa de classificação converte a análise realizada pela visão computacion
 Nesta arquitetura de controle, a classificação é representada por variáveis de resultado lógicas geradas pelo algoritmo de visão e transmitidas ao PLC:
 
 * **KXA-501 (Grão Categoria A):** assume o estado lógico 1 quando o grão analisado atende aos critérios de aprovação integral.
+* **KXA-502 (Grão Categoria B):** assume o estado lógico 1 quando o grão analisado não atende aos critérios de A, nem de C.
 * **KXA-503 (Grão Categoria C):** assume o estado lógico 1 quando o grão é diagnosticado como defeituoso ou rejeito.
-
-A Categoria B é tratada de forma complementar pelo sistema: grãos que não acionam a condição de aprovação total (**KXA-501** = 0) nem a condição de rejeição absoluta (**KXA-503** = 0) são definidos logicamente como Categoria B.
 
 Assim que a decisão lógica é tomada, o registro da classificação do grão entra em uma fila de deslocamento (*shift register*) dentro do PLC, vinculada ao rastreamento do tempo e da velocidade da esteira obtida pelo encoder, preparando o disparo da próxima etapa: a ejeção pneumática.
 
@@ -110,7 +110,7 @@ O sistema pneumático é o atuador físico responsável por desviar mecanicament
 
 A linha principal de suprimento de ar comprimido é monitorada pelo transmissor de pressão piezoelétrico **PT-601**, que fornece o valor contínuo da pressão do sistema. O correto funcionamento da ejeção depende intrinsecamente do nível de pressão. Se o ar comprimido cair abaixo do limite necessário para vencer a inércia dos grãos, a força do sopro pneumático será insuficiente, gerando falhas na separação física. Para proteger a planta contra essa condição, atua a variável **PAL-601** (Pressostato digital / Alarme de Pressão Baixa), que muda para o estado 1 se a pressão for insuficiente para a operação segura dos atuadores.
 
-Quando um grão classificado como Categoria C (**KXA-503** = 1) atinge a posição exata do bocal de desvio na esteira (calculada pelo tempo de trânsito), o PLC aciona o comando da válvula solenoide ultrarrápida **FY-603**. A abertura energizada da válvula libera um jacto de ar comprimido de curta duração que ejeta o grão descartado para fora da correia transportadora.
+Quando um grão classificado como Categoria C (**KXA-503** = 1) atinge a posição exata do bocal de desvio na esteira (calculada pelo tempo de trânsito), o PLC aciona o comando da válvula solenoide ultrarrápida **FY-603**. A abertura energizada da válvula libera um jato de ar comprimido de curta duração que ejeta o grão descartado para fora da esteira.
 
 Para garantir que a ação física de ejeção realmente ocorreu e não houve falha elétrica na bobina da solenoide ou travamento mecânico da válvula/cilindro, o sistema conta com a confirmação dada pelo sensor magnético de posição **ZSH-601** (confirmação física de avanço do atuador). A leitura do **ZSH-601** permite ao PLC verificar se o atuador respondeu ao comando no tempo esperado, fornecendo o diagnóstico de falha de acionamento em tempo real.
 
