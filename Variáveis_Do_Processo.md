@@ -23,6 +23,7 @@
 | **LIT-703** | Sensor de nível ultrassônico | Nível | Medição contínua do nível no recipiente Categoria C | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NA703`, `p_NC703`) |
 | **N/A** | Lógica de intertravamento (CLP) | Não se aplica — variável lógica/calculada | Permissão geral para operação da planta | Condição impeditiva | Planta liberada | `c_PERM` |
 | **N/A** | Variável calculada (SCADA) | Não se aplica — variável lógica/calculada | Taxa de rejeição total (Categoria C) em relação ao total | N/A (Analógico) | N/A (Analógico) | — (analógica/calculada, %) |
+| **XA-901** | Botoeira de Emergência | Não se aplica — variável lógica | Botoeira para de falha física no processo | Não há falha no sistema | Estado de Emergência | `p_EMERG` |
 # Descritivo do Processo
 
 ## 1. Recepção e Alimentação dos Grãos

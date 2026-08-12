@@ -74,29 +74,32 @@ O `PAL-601` já é o comparador digital de `PT-601`, então não é necessário 
 De acordo com o descritivo do processo, a planta só pode partir se: não houver sobrecarga no motor da esteira, a pressão pneumática estiver normal e a câmera estiver pronta.
 
 ```
-c_PERM ↔ ( ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
+c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
 ```
 
 **Leitura:** a planta está liberada **se e somente se** não houver sobrecarga no motor da esteira **E** não houver pressão baixa na linha pneumática **E** a câmera estiver pronta/OK.
 
-> ⚠️ Como observado na tabela de variáveis, ainda falta uma tag de emergência (`XA-901`/`HS-901`, sugestão) no catálogo. Quando ela existir, a regra passa a ser:
-> ```
-> c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
-> ```
-> Recomendo priorizarmos essa tag antes de implementar o intertravamento no CLP, já que segurança de máquina costuma ser condição obrigatória e não apenas mais um termo da conjunção.
+### Tabela-verdade
 
-### Tabela-verdade (versão atual, 3 variáveis)
 
-| `p_JI201` | `p_PAL601` | `p_KSA401` | `c_PERM` |
-| :---: | :---: | :---: | :---: |
-| 0 | 0 | 1 | **1** |
-| 0 | 0 | 0 | 0 |
-| 0 | 1 | 1 | 0 |
-| 1 | 0 | 1 | 0 |
-| 1 | 1 | 1 | 0 |
-| 0 | 1 | 0 | 0 |
-| 1 | 0 | 0 | 0 |
-| 1 | 1 | 0 | 0 |
+| `p_EMERG` | `p_JI201` | `p_PAL601` | `p_KSA401` | `c_PERM` |
+| :---: | :---: | :---: | :---: | :---: |
+| 0 | 0 | 0 | 0 | 0 |
+| 0 | 0 | 0 | 1 | **1** |
+| 0 | 0 | 1 | 0 | 0 |
+| 0 | 0 | 1 | 1 | 0 |
+| 0 | 1 | 0 | 0 | 0 |
+| 0 | 1 | 0 | 1 | 0 |
+| 0 | 1 | 1 | 0 | 0 |
+| 0 | 1 | 1 | 1 | 0 |
+| 1 | 0 | 0 | 0 | 0 |
+| 1 | 0 | 0 | 1 | 0 |
+| 1 | 0 | 1 | 0 | 0 |
+| 1 | 0 | 1 | 1 | 0 |
+| 1 | 1 | 0 | 0 | 0 |
+| 1 | 1 | 0 | 1 | 0 |
+| 1 | 1 | 1 | 0 | 0 |
+| 1 | 1 | 1 | 1 | 0 |
 
 Apenas a primeira linha libera a planta — é a única combinação em que todas as condições de segurança estão satisfeitas simultaneamente.
 
@@ -155,8 +158,6 @@ p_A ∨ p_B ∨ p_C  ≡  Verdadeiro          (exaustividade, por definição de
 (p_A ∧ p_C)  ≡  Falso                    (deve ser verificado — ver observação abaixo)
 ```
 
-> ⚠️ **Ponto de atenção para a equipe:** como `p_A` e `p_C` são calculados por caminhos lógicos diferentes (um exige tudo ideal, o outro basta um defeito grave), é preciso confirmar que as expressões acima nunca resultam em `p_A = 1` e `p_C = 1` ao mesmo tempo — isso indicaria uma condição fisicamente contraditória (ex.: grão com dano, mas classificado como "tudo ideal"). Como `p_A` exige `¬p_CV107 ∧ ¬p_CV108 ∧ ¬p_CV109`, e a primeira disjunção de `p_C` é `p_CV107 ∨ p_CV108 ∨ p_CV109`, essa parte já é mutuamente exclusiva por construção. Vale a pena revisitar isso quando entrarmos na parte de tabela-verdade completa (9 variáveis), possivelmente com um script para varrer as 512 combinações.
-
 ---
 
 # 6. Sistema de Ejeção Pneumática
@@ -208,7 +209,7 @@ Isso é consistente com o texto do descritivo ("o CLP interrompe preventivamente
 # 8. Consolidação — Cadeia Lógica Completa
 
 ```
-c_PERM   ↔ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC703 [∧ ¬p_EMERG, quando disponível]
+c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
 c_ALIM   ↔ c_PERM ∧ p_MOV201 ∧ ¬p_NB101
 
 p_A      ↔ p_CV101 ∧ p_CV103 ∧ p_CV105 ∧ ¬p_CV107 ∧ ¬p_CV108 ∧ ¬p_CV109
@@ -225,10 +226,3 @@ Essa cadeia cobre, em lógica proposicional pura, todo o fluxo descrito no READM
 - Próxima aula: acredito que faça sentido evoluirmos isso para **álgebra booleana com simplificação (mapas de Karnaugh)** assim que fecharmos os setpoints analógicos da Seção 2, e depois para os diagramas de intertravamento formais.
 
 ---
-
-# 9. Próximos Passos Sugeridos
-
-1. Definir com a equipe de processo os setpoints (`L_min`, `L_max`, `L_crit`, `V_min`, `V_max`, `T`) usados nas proposições derivadas da Seção 2 e 6.2.
-2. Criar a tag de emergência (`XA-901`/`HS-901`) e a tag de posição do ejetor (`ZC-603`) no catálogo, para eliminar as duas pendências marcadas neste documento.
-3. Gerar a tabela-verdade completa (9 entradas de visão) para validar formalmente a exclusividade mútua de `p_A` e `p_C`.
-4. Traduzir as expressões da Seção 8 para lógica Ladder (CLP) mantendo a mesma nomenclatura de símbolos, para preservar a rastreabilidade entre este documento e o programa.
