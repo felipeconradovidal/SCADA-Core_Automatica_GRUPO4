@@ -29,9 +29,6 @@ Para cada variável foram definidos os seguintes elementos:
 
 Essa estrutura permite que cada condição física seja representada por uma expressão lógica utilizada posteriormente na implementação dos intertravamentos, regras de decisão e algoritmos de controle.
 
-> **Nota de revisão (Parte 3):** a coluna **Símbolo Lógico** define o identificador curto que cada proposição vai assumir nas expressões de lógica proposicional (intertravamentos, classificação, alarmes). Convenção: `p_TAG` para proposições de entrada (sensores/condições) e `c_TAG` para proposições de saída/comando calculadas pelo PLC. O desenvolvimento completo das regras está em **[Lógica_Proposicional.md](./Lógica_Proposicional.md)**.
-
-
 ---
 
 # Parte 1 – Variáveis da Visão Computacional (ISA 5.1)
