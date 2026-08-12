@@ -237,7 +237,7 @@ Os grãos serão separados em 3 categorias diferentes, que serão explicadas no 
 
 ---
 
-## 4.5 Sistema de Ejeção Pneumática
+## 4.6 Sistema de Ejeção Pneumática
 
 A separação dos grãos será realizada através de **atuadores pneumáticos de alta velocidade**.
 
@@ -257,7 +257,7 @@ A lógica simplificada é:
 
 ---
 
-## 4.5 Coleta e Monitoramento
+## 4.7 Coleta e Monitoramento
 
 Após a classificação, cada categoria será direcionada para um recipiente ou linha de coleta.
 
