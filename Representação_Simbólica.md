@@ -25,8 +25,12 @@ Para cada variável foram definidos os seguintes elementos:
 - **Proposição lógica**
 - **Estado 0**
 - **Estado 1**
+- **Símbolo Lógico** *(adicionado na revisão da Parte 3 — ver nota abaixo)*
 
 Essa estrutura permite que cada condição física seja representada por uma expressão lógica utilizada posteriormente na implementação dos intertravamentos, regras de decisão e algoritmos de controle.
+
+> **Nota de revisão (Parte 3):** a coluna **Símbolo Lógico** define o identificador curto que cada proposição vai assumir nas expressões de lógica proposicional (intertravamentos, classificação, alarmes). Convenção: `p_TAG` para proposições de entrada (sensores/condições) e `c_TAG` para proposições de saída/comando calculadas pelo PLC. O desenvolvimento completo das regras está em **[Lógica_Proposicional.md](./Lógica_Proposicional.md)**.
+
 
 ---
 
@@ -36,17 +40,17 @@ A tabela a seguir apresenta o conjunto de variáveis provenientes do sistema de 
 
 # Tabela 1 – Variáveis da Visão Computacional
 
-| Tag Instrumentativo | Tipo de dispositivo | Variável física | Proposição lógica | Estado 0 | Estado 1 |
-| :------------------ | :------------------ | :-------------- | :---------------- | :------- | :------- |
-| **CV-101** | Câmera + IA | Cor Ideal | CV-101: Cor dentro do padrão ideal | Cor fora do padrão ideal | Cor dentro do padrão ideal |
-| **CV-102** | Câmera + IA | Cor Secundária | CV-102: Cor dentro do padrão secundário | Cor fora do padrão secundário | Cor dentro do padrão secundário |
-| **CV-103** | Câmera + IA | Tamanho Ideal | CV-103: Tamanho dentro do padrão ideal | Tamanho fora do padrão ideal | Tamanho dentro do padrão ideal |
-| **CV-104** | Câmera + IA | Tamanho Secundário | CV-104: Tamanho dentro do padrão secundário | Tamanho fora do padrão secundário | Tamanho dentro do padrão secundário |
-| **CV-105** | Câmera + IA | Formato Ideal | CV-105: Formato dentro do padrão ideal | Formato fora do padrão ideal | Formato dentro do padrão ideal |
-| **CV-106** | Câmera + IA | Formato Secundário | CV-106: Formato dentro do padrão secundário | Formato fora do padrão secundário | Formato dentro do padrão secundário |
-| **CV-107** | Câmera + IA | Dano | CV-107: Possui dano | Sem dano | Com dano |
-| **CV-108** | Câmera + IA | Praga | CV-108: Possui praga | Sem praga | Com praga |
-| **CV-109** | Câmera + IA | Impureza | CV-109: Contém impureza | Sem impureza | Com impureza |
+| Tag Instrumentativo | Tipo de dispositivo | Variável física | Proposição lógica | Estado 0 | Estado 1 | Símbolo Lógico |
+| :------------------ | :------------------ | :-------------- | :---------------- | :------- | :------- | :-------------- |
+| **CV-101** | Câmera + IA | Cor Ideal | CV-101: Cor dentro do padrão ideal | Cor fora do padrão ideal | Cor dentro do padrão ideal | `p_CV101` |
+| **CV-102** | Câmera + IA | Cor Secundária | CV-102: Cor dentro do padrão secundário | Cor fora do padrão secundário | Cor dentro do padrão secundário | `p_CV102` |
+| **CV-103** | Câmera + IA | Tamanho Ideal | CV-103: Tamanho dentro do padrão ideal | Tamanho fora do padrão ideal | Tamanho dentro do padrão ideal | `p_CV103` |
+| **CV-104** | Câmera + IA | Tamanho Secundário | CV-104: Tamanho dentro do padrão secundário | Tamanho fora do padrão secundário | Tamanho dentro do padrão secundário | `p_CV104` |
+| **CV-105** | Câmera + IA | Formato Ideal | CV-105: Formato dentro do padrão ideal | Formato fora do padrão ideal | Formato dentro do padrão ideal | `p_CV105` |
+| **CV-106** | Câmera + IA | Formato Secundário | CV-106: Formato dentro do padrão secundário | Formato fora do padrão secundário | Formato dentro do padrão secundário | `p_CV106` |
+| **CV-107** | Câmera + IA | Dano | CV-107: Possui dano | Sem dano | Com dano | `p_CV107` |
+| **CV-108** | Câmera + IA | Praga | CV-108: Possui praga | Sem praga | Com praga | `p_CV108` |
+| **CV-109** | Câmera + IA | Impureza | CV-109: Contém impureza | Sem impureza | Com impureza | `p_CV109` |
 
 ---
 
