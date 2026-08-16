@@ -284,7 +284,7 @@ Para o desenvolvimento inicial do projeto, será considerado um sistema genéric
 - Feijão;
 - Outros produtos agrícolas com características físicas classificáveis.
 
-A escolha por um modelo genérico permite que o projeto mantenha seu foco na **automação e na arquitetura do SCADA**, sem ficar excessivamente dependente das características específicas de um único produto.
+O modelo permite que o projeto mantenha seu foco na **automação e na arquitetura do SCADA**, sem ficar excessivamente dependente das características específicas de um único produto. Contudo, sua aplicação será baseada nos grãos de arroz.
 
 Para fins de simulação e desenvolvimento, os grãos poderão ser classificados em três categorias principais:
 
@@ -294,8 +294,8 @@ Representa os grãos que atendem aos critérios de qualidade estabelecidos.
 
 Características esperadas:
 
-- Tamanho adequado;
-- Coloração dentro do padrão;
+- Tamanho adequado (Comprimento: 6,0 – 7,5 mm; Largura: 1,8 – 2,2 mm);
+- Coloração dentro do padrão (Branco a branco-perolado);
 - Ausência de danos significativos;
 - Ausência de pragas detectadas;
 - Ausência de deformações relevantes.
@@ -310,8 +310,8 @@ Representa os grãos que não apresentam características suficientemente adequa
 
 Exemplos:
 
-- Tamanho inferior ao padrão;
-- Pequenas variações de coloração;
+- Tamanho inferior ao padrão (Comprimento: 4,4 – 5,9 mm; Largura: 1,3 – 1,7 mm);
+- Pequenas variações de coloração (Branco-amarelado, creme ou levemente acinzentado);
 - Pequenas imperfeições;
 - Características parcialmente fora da especificação principal.
 
@@ -327,9 +327,9 @@ Exemplos:
 
 - Presença de pragas;
 - Danos mecânicos severos;
-- Coloração inadequada;
+- Coloração inadequada (Amarelo intenso, marrom, cinza escuro ou preto);
 - Deformações significativas;
 - Impurezas;
-- Tamanho extremamente fora do padrão.
+- Tamanho extremamente fora do padrão (Fora dos padrões dos casos acima).
 
 Esses produtos serão direcionados para o recipiente de rejeitos.
