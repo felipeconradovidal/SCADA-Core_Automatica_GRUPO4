@@ -142,3 +142,262 @@ graph TD
     NOT_NB101 --> AND_ALIM
 
     AND_ALIM --> P_ALIM
+```
+### 2.2. Permissão Geral de Operação ($c_{\text{PERM}}$)
+
+A Permissão Geral de Operação é o sinal mestre de habilitação do processo SCADA/CLP. A planta só é liberada para operar se não houver condição de emergência, se os sistemas elétricos e pneumáticos estiverem normais, se o reservatório de rejeitos não estiver transbordando e se a câmera de visão computacional estiver pronta.
+
+Para autorizar a Permissão Geral ($c_{\text{PERM}} = 1$), as seguintes condições de segurança e processo devem ser satisfeitas simultaneamente:
+1. **Ausência de emergência acionada** ($\neg p_{\text{EMERG}} = 1$);
+2. **Ausência de sobrecarga no motor da esteira** ($\neg p_{\text{JI201}} = 1$);
+3. **Pressão pneumática normal** ($\neg p_{\text{PAL601}} = 1$);
+4. **Reservatório de rejeito sem bloqueio por nível crítico** ($\neg p_{\text{NC703}} = 1$);
+5. **Câmera de visão computacional operacional** ($p_{\text{KSA401}} = 1$).
+
+A expressão lógica formal da Permissão Geral de Operação consolidada é dada por:
+
+$$c_{\text{PERM}} \equiv \neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}$$
+
+```mermaid
+graph TD
+    EMERG[p_EMERG: Emergência Pressionada]
+    JI201[p_JI201: Sobrecarga Motor Esteira]
+    PAL601[p_PAL601: Pressão Pneumática Baixa]
+    NC703[p_NC703: Nível Crítico Rejeito]
+    KSA401[p_KSA401: Câmera Pronta]
+
+    NOT_EMERG[NOT]
+    NOT_JI201[NOT]
+    NOT_PAL601[NOT]
+    NOT_NC703[NOT]
+
+    AND_PERM[AND]
+    PERM[c_PERM: Permissão Geral de Operação]
+
+    EMERG --> NOT_EMERG
+    JI201 --> NOT_JI201
+    PAL601 --> NOT_PAL601
+    NC703 --> NOT_NC703
+
+    NOT_EMERG --> AND_PERM
+    NOT_JI201 --> AND_PERM
+    NOT_PAL601 --> AND_PERM
+    NOT_NC703 --> AND_PERM
+    KSA401 --> AND_PERM
+
+    AND_PERM --> PERM
+```
+
+---
+
+### 2.3. Classificação Lógica dos Grãos (Categorias A, B e C)
+
+O sistema de visão computacional analisa os atributos físicos dos grãos e disponibiliza os sinais digitais no CLP para a tomada de decisão em tempo real.
+
+#### 2.3.1. Categoria A — Produto Aprovado ($p_{\text{A}}$)
+
+Um grão é classificado como **Categoria A** (Aprovado) se atender integralmente a todos os parâmetros ideais de cor, tamanho e formato, sem apresentar qualquer tipo de defeito ou contaminação.
+
+A expressão lógica formal para aprovação é:
+
+$$p_{\text{A}} \equiv p_{\text{CV101}} \land p_{\text{CV103}} \land p_{\text{CV105}} \land \neg p_{\text{CV107}} \land \neg p_{\text{CV108}} \land \neg p_{\text{CV109}}$$
+
+```mermaid
+graph TD
+    CV101[p_CV101: Cor Ideal]
+    CV103[p_CV103: Tamanho Ideal]
+    CV105[p_CV105: Formato Ideal]
+    CV107[p_CV107: Presença de Dano]
+    CV108[p_CV108: Presença de Praga]
+    CV109[p_CV109: Presença de Impureza]
+
+    NOT_CV107[NOT]
+    NOT_CV108[NOT]
+    NOT_CV109[NOT]
+
+    AND_CAT_A[AND]
+    P_A[p_A: Categoria A - Aprovado]
+
+    CV107 --> NOT_CV107
+    CV108 --> NOT_CV108
+    CV109 --> NOT_CV109
+
+    CV101 --> AND_CAT_A
+    CV103 --> AND_CAT_A
+    CV105 --> AND_CAT_A
+    NOT_CV107 --> AND_CAT_A
+    NOT_CV108 --> AND_CAT_A
+    NOT_CV109 --> AND_CAT_A
+
+    AND_CAT_A --> P_A
+```
+
+#### 2.3.2. Categoria C — Produto Rejeitado ($p_{\text{C}}$)
+
+Um grão é classificado como **Categoria C** (Rejeitado) se possuir qualquer defeito grave (dano, praga ou impureza) ou se estiver completamente fora da faixa aceitável (nem ideal, nem secundário) para cor, tamanho ou formato.
+
+A expressão lógica formal para rejeição é:
+
+$$p_{\text{C}} \equiv p_{\text{CV107}} \lor p_{\text{CV108}} \lor p_{\text{CV109}} \lor (\neg p_{\text{CV101}} \land \neg p_{\text{CV102}}) \lor (\neg p_{\text{CV103}} \land \neg p_{\text{CV104}}) \lor (\neg p_{\text{CV105}} \land \neg p_{\text{CV106}})$$
+
+```mermaid
+graph TD
+    CV101[p_CV101: Cor Ideal]
+    CV102[p_CV102: Cor Secundária]
+    CV103[p_CV103: Tamanho Ideal]
+    CV104[p_CV104: Tamanho Secundário]
+    CV105[p_CV105: Formato Ideal]
+    CV106[p_CV106: Formato Secundário]
+    CV107[p_CV107: Dano]
+    CV108[p_CV108: Praga]
+    CV109[p_CV109: Impureza]
+
+    NOT_CV101[NOT]
+    NOT_CV102[NOT]
+    NOT_CV103[NOT]
+    NOT_CV104[NOT]
+    NOT_CV105[NOT]
+    NOT_CV106[NOT]
+
+    AND_COR[AND]
+    AND_TAM[AND]
+    AND_FOR[AND]
+
+    OR_CAT_C[OR]
+    P_C[p_C: Categoria C - Rejeitado]
+
+    CV101 --> NOT_CV101
+    CV102 --> NOT_CV102
+    CV103 --> NOT_CV103
+    CV104 --> NOT_CV104
+    CV105 --> NOT_CV105
+    CV106 --> NOT_CV106
+
+    NOT_CV101 --> AND_COR
+    NOT_CV102 --> AND_COR
+
+    NOT_CV103 --> AND_TAM
+    NOT_CV104 --> AND_TAM
+
+    NOT_CV105 --> AND_FOR
+    NOT_CV106 --> AND_FOR
+
+    CV107 --> OR_CAT_C
+    CV108 --> OR_CAT_C
+    CV109 --> OR_CAT_C
+    AND_COR --> OR_CAT_C
+    AND_TAM --> OR_CAT_C
+    AND_FOR --> OR_CAT_C
+
+    OR_CAT_C --> P_C
+```
+
+#### 2.3.3. Categoria B — Produto Secundário ($p_{\text{B}}$)
+
+A **Categoria B** representa os grãos de qualidade comercial intermediária. O produto cai na Categoria B por exclusão, quando não atende aos critérios estritos da Categoria A, mas também não possui defeitos suficientes para ser rejeitado na Categoria C.
+
+A expressão lógica formal é dada por:
+
+$$p_{\text{B}} \equiv \neg p_{\text{A}} \land \neg p_{\text{C}}$$
+
+```mermaid
+graph TD
+    P_A[p_A: Categoria A]
+    P_C[p_C: Categoria C]
+
+    NOT_PA[NOT]
+    NOT_PC[NOT]
+
+    AND_CAT_B[AND]
+    P_B[p_B: Categoria B - Secundário]
+
+    P_A --> NOT_PA
+    P_C --> NOT_PC
+
+    NOT_PA --> AND_CAT_B
+    NOT_PC --> AND_CAT_B
+
+    AND_CAT_B --> P_B
+```
+
+---
+
+### 2.4. Sistema de Ejeção Pneumática e Atuação ($c_{\text{FY603}}$)
+
+O acionamento da válvula solenoide do ejetor pneumático é o comando de saída físico responsável por desviar os grãos rejeitados (Categoria C) da esteira principal para o reservatório de rejeitos.
+
+#### 2.4.1. Permissivo de Disparo do Ejetor Pneumático ($c_{\text{FY603}}$)
+
+A válvula de ejeção só deve ser acionada se o grão for Categoria C, se o *shift register* do CLP confirmar que o grão atingiu a posição física em frente ao bocal e se houver pressão de ar comprimido suficiente para a ejeção.
+
+As condições para o acionamento do atuador são:
+1. Grão classificado como Rejeitado ($p_{\text{C}} = 1$);
+2. Posição física do grão confirmada no bocal ejetor ($p_{\text{POS603}} = 1$);
+3. Ausência de alarme de pressão pneumática baixa ($\neg p_{\text{PAL601}} = 1$).
+
+A expressão lógica do comando de disparo da válvula ejetora é:
+
+$$c_{\text{FY603}} \equiv p_{\text{C}} \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}$$
+
+```mermaid
+graph TD
+    P_C[p_C: Grão Categoria C]
+    POS603[p_POS603: Grão na Posição do Bocal]
+    PAL601[p_PAL601: Pressão Pneumática Baixa]
+
+    NOT_PAL601[NOT]
+    AND_FY603[AND]
+    C_FY603[c_FY603: Comando Válvula Ejetora]
+
+    PAL601 --> NOT_PAL601
+
+    P_C --> AND_FY603
+    POS603 --> AND_FY603
+    NOT_PAL601 --> AND_FY603
+
+    AND_FY603 --> C_FY603
+```
+
+#### 2.4.2. Intertrava e Diagnóstico de Falha do Ejetor ($p_{\text{FALHA\-EJETOR}}$)
+
+Se o comando de acionamento ($c_{\text{FY603}}$) for enviado à válvula solenoide, mas o sensor magnético do cilindro ($p_{\text{ZSH601}}$) não confirmar o avanço mecânico dentro de uma janela de tempo limite $T$, o CLP diagnostica uma falha no atuador e gera um sinal de alarme.
+
+A expressão lógica da falha do atuador é expressa por:
+
+$$p_{\text{FALHA\-EJETOR}} \equiv c_{\text{FY603}} \land \neg p_{\text{ZSH601}} \quad \text{(avaliado após tempo } T \text{)}$$
+
+#### Demonstração da Relação de Bloqueio do Atuador via Leis de De Morgan
+
+A condição na qual a ejeção fica **impedida ou bloqueada** ($\text{Bloqueio}_{\text{FY603}}$) é a negação do comando de disparo ($c_{\text{FY603}}$). Aplicando as Leis de De Morgan:
+
+$$\text{Bloqueio}_{\text{FY603}} \equiv \neg c_{\text{FY603}}$$
+
+$$\text{Bloqueio}_{\text{FY603}} \equiv \neg (p_{\text{C}} \land p_{\text{POS603}} \land \neg p_{\text{PAL601}})$$
+
+$$\text{Bloqueio}_{\text{FY603}} \equiv \neg p_{\text{C}} \lor \neg p_{\text{POS603}} \lor \neg(\neg p_{\text{PAL601}})$$
+
+Simplificando a dupla negação:
+
+$$\text{Bloqueio}_{\text{FY603}} \equiv \neg p_{\text{C}} \lor \neg p_{\text{POS603}} \lor p_{\text{PAL601}}$$
+
+Ou seja, o acionamento pneumático é inibido se o grão **não** for Categoria C, **ou** se ele **não** estiver na posição do bocal, **ou** se houver queda de pressão na linha pneumática ($p_{\text{PAL601}}$).
+
+---
+
+### 2.5. Intertravamento por Transbordo de Rejeitos ($p_{\text{NC703}}$)
+
+Para evitar o derramamento físico de grãos descartados e contaminação da área de processo, o transmissor de nível do reservatório de rejeito ($\text{LIT-703}$) monitora o volume armazenado. Ao atingir o nível crítico de 100% ($p_{\text{NC703}} = 1$), o CLP realiza o bloqueio preventivo da Permissão Geral de Operação.
+
+#### Demonstração da Propagação do Intertravamento por De Morgan
+
+Ao incorporar o sinal do sensor de nível crítico $\neg p_{\text{NC703}}$ na Permissão Geral de Operação ($c_{\text{PERM}}$), a condição na qual a planta é colocada em estado de parada por segurança ($\text{Trip}_{\text{GERAL}}$) expande-se conforme:
+
+$$\text{Trip}_{\text{GERAL}} \equiv \neg c_{\text{PERM}}$$
+
+$$\text{Trip}_{\text{GERAL}} \equiv \neg (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}})$$
+
+Aplicando as Leis de De Morgan:
+
+$$\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$$
+
+Dessa forma, o transbordo do reservatório de rejeito ($p_{\text{NC703}} = 1$) entra diretamente na disjunção de parada do processo, interrompendo imediatamente o alimentador vibratório via desabilitação de $c_{\text{PERM}}$.
