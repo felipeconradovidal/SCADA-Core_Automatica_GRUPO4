@@ -83,3 +83,62 @@ Abaixo estão as tabelas-verdade para cada um dos operadores lógicos apresentad
 | 1 | 0 | 0 |
 | 0 | 1 | 0 |
 | 0 | 0 | 1 |
+
+## 2. Aplicação em Engenharia: Permissivos de Partida e Intertravamento do Alimentador Vibratório
+
+Na Engenharia de Controle e Automação, o **permissivo de partida** é um conjunto de condições lógicas de segurança e de processo que devem ser integralmente satisfeitas para autorizar o acionamento inicial de um equipamento industrial. Uma vez em operação, essas e outras condições críticas continuam sendo monitoradas continuamente pelo CLP (Controlador Lógico Programável); caso alguma falhe, o **intertravamento de operação (*Run Interlock* / *Trip*)** é comutado, provocando a parada imediata e segura do sistema para evitar acidentes ou danos aos equipamentos.
+
+---
+
+### 2.1. Permissivo do Alimentador Vibratório ($P_{\text{ALIM}}$)
+
+O Alimentador Vibratório é o equipamento responsável pela dosagem controlada e contínua dos grãos na esteira de transporte para posterior inspeção óptica. A partida segura do alimentador depende da liberação geral da planta, da confirmação de que a esteira transportadora está em movimento e da garantia de suprimento de grãos no funil de recepção (evitando a operação a seco).
+
+Para permitir a partida do Alimentador Vibratório, as seguintes condições devem ser satisfeitas simultaneamente:
+1. **Permissão Geral de Operação satisfeita** ($c_{\text{PERM}} = 1$): Sem botão de emergência acionado ($\neg p_{\text{EMERG}}$), sem sobrecarga no motor da esteira ($\neg p_{\text{JI201}}$), sem pressão pneumática baixa ($\neg p_{\text{PAL601}}$) e com a câmera de visão computacional pronta ($p_{\text{KSA401}}$).
+2. **Esteira em movimento** ($p_{\text{MOV201}} = 1$): Confirmado pela medição de velocidade ($\text{ST-201} > 0$).
+3. **Ausência de nível baixo no funil de recepção** ($\neg p_{\text{NB101}} = 1$): Garantido pelo comparador do transmissor de nível ($\text{LIT-101} \ge L_{\text{min}}$).
+
+A expressão lógica formal que define o permissivo do Alimentador Vibratório é expressa por:
+
+$$P_{\text{ALIM}} \equiv (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land p_{\text{KSA401}}) \land p_{\text{MOV201}} \land \neg p_{\text{NB101}}$$
+
+```mermaid
+graph TD
+    %% Condições de Entrada (Segurança e Processo)
+    EMERG[p_EMERG: Emergência Pressionada]
+    JI201[p_JI201: Sobrecarga Motor Esteira]
+    PAL601[p_PAL601: Pressão Pneumática Baixa]
+    KSA401[p_KSA401: Câmera Pronta]
+    MOV201[p_MOV201: Esteira em Movimento]
+    NB101[p_NB101: Nível Baixo no Funil]
+
+    %% Inversores NOT
+    NOT_EMERG[NOT]
+    NOT_JI201[NOT]
+    NOT_PAL601[NOT]
+    NOT_NB101[NOT]
+
+    %% Blocos Lógicos AND
+    AND_PERM[AND: c_PERM]
+    AND_ALIM[AND]
+
+    %% Saída
+    P_ALIM[P_ALIM: Permissivo do Alimentador Vibratório]
+
+    %% Conexões
+    EMERG --> NOT_EMERG
+    JI201 --> NOT_JI201
+    PAL601 --> NOT_PAL601
+    NB101 --> NOT_NB101
+
+    NOT_EMERG --> AND_PERM
+    NOT_JI201 --> AND_PERM
+    NOT_PAL601 --> AND_PERM
+    KSA401 --> AND_PERM
+
+    AND_PERM --> AND_ALIM
+    MOV201 --> AND_ALIM
+    NOT_NB101 --> AND_ALIM
+
+    AND_ALIM --> P_ALIM
