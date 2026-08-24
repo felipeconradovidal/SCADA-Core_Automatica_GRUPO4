@@ -4,31 +4,6 @@
 
 ---
 
-## Sumário
-- [1. Introdução e Contextualização](#1-introdução-e-contextualização)
-- [2. Fundamentos Matemáticos da Lógica de Predicados de Primeira Ordem](#2-fundamentos-matemáticos-da-lógica-de-predicados-de-primeira-ordem)
-  - [2.1. Termos, Variáveis e Predicados](#21-termos-variáveis-e-predicados)
-  - [2.2. Universo de Discurso (Domínios da Planta)](#22-universo-de-discurso-domínios-da-planta)
-  - [2.3. Quantificador Universal ($\forall$)](#23-quantificador-universal-forall)
-  - [2.4. Quantificador Existencial ($\exists$)](#24-quantificador-existencial-exists)
-  - [2.5. Negação e Leis de De Morgan para Quantificadores](#25-negação-e-leis-de-de-morgan-para-quantificadores)
-- [3. Modelagem Predicativa dos Componentes da Planta](#3-modelagem-predicativa-dos-componentes-da-planta)
-  - [3.1. Predicados de Instrumentação e Sensores](#31-predicados-de-instrumentação-e-sensores)
-  - [3.2. Predicados de Atuadores e Mecanismos](#32-predicados-de-atuadores-e-mecanismos)
-  - [3.3. Predicados de Grãos e Amostras Inspecionadas](#33-predicados-de-grãos-e-amostras-inspecionadas)
-  - [3.4. Predicados de Recipientes e Zonas Operacionais](#34-predicados-de-recipientes-e-zonas-operacionais)
-- [4. Regras de Varredura Global de Estado](#4-regras-de-varredura-global-de-estado)
-  - [4.1. Varredura de Integridade dos Sensores Críticos ($\forall$)](#41-varredura-de-integridade-dos-sensores-críticos-forall)
-  - [4.2. Varredura Global de Alarmes e Anomalias Ativas ($\exists$)](#42-varredura-global-de-alarmes-e-anomalias-ativas-exists)
-  - [4.3. Varredura de Prontidão Operacional para Partida](#43-varredura-de-prontidão-operacional-para-partida)
-  - [4.4. Varredura de Qualidade e Rastreabilidade no Fluxo de Grãos](#44-varredura-de-qualidade-e-rastreabilidade-no-fluxo-de-grãos)
-- [5. Entregável: Arquitetura e Implementação do Módulo de Varredura](#5-entregável-arquitetura-e-implementação-do-módulo-de-varredura)
-  - [5.1. Fluxograma de Varredura Cíclica (Scan Cycle)](#51-fluxograma-de-varredura-cíclica-scan-cycle)
-  - [5.2. Especificação Algorítmica em Python (SCADA-Core Engine)](#52-especificação-algorítmica-em-python-scada-core-engine)
-- [6. Conclusão](#6-conclusão)
-
----
-
 # 1. Introdução e Contextualização
 
 Nas etapas anteriores do projeto **SCADA-Core Automática**, a lógica de intertravamento e classificação foi formulada a partir da **Lógica Proposicional**, na qual variáveis específicas (como `p_PAL601` ou `p_JI201`) são tratadas como proposições atômicas fixas.
