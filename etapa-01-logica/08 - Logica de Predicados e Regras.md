@@ -4,26 +4,6 @@
 
 ---
 
-## Sumário
-- [1. Introdução e Arquitetura de Sistemas Especialistas](#1-introdução-e-arquitetura-de-sistemas-especialistas)
-  - [1.1. Do Intertravamento Reativo ao Diagnóstico Inteligente](#11-do-intertravamento-reativo-ao-diagnóstico-inteligente)
-  - [1.2. Estrutura do Sistema Especialista Industrial](#12-estrutura-do-sistema-especialista-industrial)
-- [2. Representação Formal do Conhecimento via Regras de Produção](#2-representação-formal-do-conhecimento-via-regras-de-produção)
-  - [2.1. Sintaxe das Regras SE... ENTÃO (IF-THEN)](#21-sintaxe-das-regras-se-então-if-then)
-  - [2.2. Níveis de Severidade e Fatores de Certeza](#22-níveis-de-severidade-e-fatores-de-certeza)
-- [3. Entregável: Base de Regras de Conhecimento da Planta](#3-entregável-base-de-regras-de-conhecimento-da-planta)
-  - [3.1. Módulo A — Recepção, Nível e Alimentador Vibratório](#31-módulo-a--recepção-nível-e-alimentador-vibratório)
-  - [3.2. Módulo B — Tração da Esteira e Transporte Contínuo](#32-módulo-b--tração-da-esteira-e-transporte-contínuo)
-  - [3.3. Módulo C — Pesagem Dinâmica e Vazão Mássica](#33-módulo-c--pesagem-dinâmica-e-vazão-mássica)
-  - [3.4. Módulo D — Visão Computacional e Gatilho Óptico](#34-módulo-d--visão-computacional-e-gatilho-óptico)
-  - [3.5. Módulo E — Sistema Pneumático e Atuadores de Ejeção](#35-módulo-e--sistema-pneumático-e-atuadores-de-ejeção)
-  - [3.6. Módulo F — Coleta, Silos de Rejeito e Transbordo](#36-módulo-f--coleta-silos-de-rejeito-e-transbordo)
-- [4. Catálogo Consolidado de Regras do Sistema Especialista](#4-catálogo-consolidado-de-regras-do-sistema-especialista)
-- [5. Implementação da Base de Conhecimento Estruturada em Python](#5-implementação-da-base-de-conhecimento-estruturada-em-python)
-- [6. Conclusão](#6-conclusão)
-
----
-
 # 1. Introdução e Arquitetura de Sistemas Especialistas
 
 ## 1.1. Do Intertravamento Reativo ao Diagnóstico Inteligente
