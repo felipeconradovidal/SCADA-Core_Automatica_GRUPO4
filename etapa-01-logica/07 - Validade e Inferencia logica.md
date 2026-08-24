@@ -4,25 +4,6 @@
 
 ---
 
-## Sumário
-- [1. Introdução e Contextualização](#1-introdução-e-contextualização)
-- [2. Fundamentos Matemáticos da Inferência Lógica](#2-fundamentos-matemáticos-da-inferência-lógica)
-  - [2.1. Argumentos Válidos, Premissas e Conclusão](#21-argumentos-válidos-premissas-e-conclusão)
-  - [2.2. Regras de Inferência Dedutiva Clássica](#22-regras-de-inferência-dedutiva-clássica)
-  - [2.3. Método de Prova por Contradição (Reductio ad Absurdum)](#23-método-de-prova-por-contradição-reductio-ad-absurdum)
-- [3. Matriz de Causa e Efeito (Safety Matrix) da Planta](#3-matriz-de-causa-e-efeito-safety-matrix-da-planta)
-- [4. Provas Formais de Ausência de Falhas e Estados Proibidos](#4-provas-formais-de-ausência-de-falhas-e-estados-proibidos)
-  - [4.1. Teorema 1: Garantia de Desligamento da Alimentação em Falha Crítica](#41-teorema-1-garantia-de-desligamento-da-alimentação-em-falha-crítica)
-  - [4.2. Teorema 2: Impossibilidade de Ejeção com Falha Pneumática](#42-teorema-2-impossibilidade-de-ejeção-com-falha-pneumática)
-  - [4.3. Teorema 3: Intertravamento Absoluto de Alimentação a Seco / Esteira Parada](#43-teorema-3-intertravamento-absoluto-de-alimentação-a-seco--esteira-parada)
-  - [4.4. Teorema 4: Exclusão Mútua e Exaustividade da Classificação dos Grãos](#44-teorema-4-exclusão-mútua-e-exaustividade-da-classificação-dos-grãos)
-  - [4.5. Teorema 5: Proteção Contra Transbordo do Silo de Rejeito](#45-teorema-5-proteção-contra-transbordo-do-silo-de-rejeito)
-- [5. Entregável: Verificador Lógico Formal Automatizado em Python](#5-entregável-verificador-lógico-formal-automatizado-em-python)
-  - [5.1. Algoritmo de Verificação Formal de Teoremas de Segurança](#51-algoritmo-de-verificação-formal-de-teoremas-de-segurança)
-- [6. Conclusão](#6-conclusão)
-
----
-
 # 1. Introdução e Contextualização
 
 Em sistemas industriais críticos supervisionados por software SCADA e CLP, a ocorrência de combinações operacionais imprevistas pode resultar em danos patrimoniais severos, queima de motores, contaminação biológica de lotes ou acidentes de trabalho.
