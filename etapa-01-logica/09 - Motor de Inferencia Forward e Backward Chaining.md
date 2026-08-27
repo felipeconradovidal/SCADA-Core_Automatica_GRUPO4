@@ -215,18 +215,18 @@ Para consolidar as especificações das Aulas 00 a 08 da planta de seleção de 
 A base $\mathcal{R} = \{\mathcal{R}_{01}, \mathcal{R}_{02}, \dots, \mathcal{R}_{12}\}$ modela a física e o diagnóstico inteligente da planta:
 
 $$\begin{aligned}
-\mathcal{R}_{01} &: (c_{\text{ALIM}} \land p_{\text{MOV201}} \land \neg p_{\text{NB101}} \land \text{VazaoNula}) \implies \text{CausaRaiz}(\text{"Obstrução Mecânica no Bocal do Funil"}) \\
-\mathcal{R}_{02} &: (p_{\text{NB101}} \land c_{\text{ALIM}}) \implies \text{Diagnostico}(\text{"Funil Próximo ao Esvaziamento"}) \\
-\mathcal{R}_{03} &: (c_{\text{ESTEIRA}} \land p_{\text{JI201}} \land \neg p_{\text{MOV201}}) \implies \text{CausaRaiz}(\text{"Travamento Mecânico no Rolo ou Motor da Esteira"}) \\
-\mathcal{R}_{04} &: (c_{\text{ESTEIRA}} \land \neg p_{\text{JI201}} \land \neg p_{\text{MOV201}}) \implies \text{CausaRaiz}(\text{"Falha de Leitura no Sensor ST-201 ou Patinagem de Correia"}) \\
-\mathcal{R}_{05} &: (\text{SobrecargaMassa}) \implies \text{CausaRaiz}(\text{"Excessiva Camada de Grãos ou Impacto Físico na Célula WT-301"}) \\
-\mathcal{R}_{06} &: (\neg c_{\text{ALIM}} \land p_{\text{MOV201}} \land \text{MassaResidual}) \implies \text{Diagnostico}(\text{"Deriva de Zero / Acúmulo de Resíduo na Célula WT-301"}) \\
-\mathcal{R}_{07} &: (\neg p_{\text{KSA401}}) \implies \text{CausaRaiz}(\text{"Falha de Comunicação GigE ou Software da Câmera Travado"}) \\
-\mathcal{R}_{08} &: (\text{TaxaRejeicaoAlta}) \implies \text{Diagnostico}(\text{"Matéria-Prima com Alto Índice de Contaminação/Pragas"}) \\
-\mathcal{R}_{09} &: (p_{\text{KSA401}} \land p_{\text{XS401}} \land \text{RejeicaoAnomalaConsecutiva}) \implies \text{CausaRaiz}(\text{"Lente Obstruída por Poeira ou Falha na Iluminação LED"}) \\
-\mathcal{R}_{10} &: (p_{\text{PAL601}}) \implies \text{CausaRaiz}(\text{"Queda Crítica de Pressão no Suprimento Pneumático Principal"}) \\
-\mathcal{R}_{11} &: (c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}) \implies \text{CausaRaiz}(\text{"Queima da Bobina Solenoide FY-603 ou Travamento Mecânico do Carretel"}) \\
-\mathcal{R}_{12} &: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{"Silo de Rejeito Categoria C Saturado (100%) - Risco de Transbordo"})
+\mathcal{R}_{01} &: (c_{\text{ALIM}} \land p_{\text{MOV201}} \land \neg p_{\text{NB101}} \land \text{VazaoNula}) \implies \text{CausaRaiz}(\text{Obstrução Mecânica no Bocal do Funil}) \\
+\mathcal{R}_{02} &: (p_{\text{NB101}} \land c_{\text{ALIM}}) \implies \text{Diagnostico}(\text{Funil Próximo ao Esvaziamento}) \\
+\mathcal{R}_{03} &: (c_{\text{ESTEIRA}} \land p_{\text{JI201}} \land \neg p_{\text{MOV201}}) \implies \text{CausaRaiz}(\text{Travamento Mecânico no Rolo ou Motor da Esteira}) \\
+\mathcal{R}_{04} &: (c_{\text{ESTEIRA}} \land \neg p_{\text{JI201}} \land \neg p_{\text{MOV201}}) \implies \text{CausaRaiz}(\text{Falha de Leitura no Sensor ST-201 ou Patinagem de Correia}) \\
+\mathcal{R}_{05} &: (\text{SobrecargaMassa}) \implies \text{CausaRaiz}(\text{Excessiva Camada de Grãos ou Impacto Físico na Célula WT-301}) \\
+\mathcal{R}_{06} &: (\neg c_{\text{ALIM}} \land p_{\text{MOV201}} \land \text{MassaResidual}) \implies \text{Diagnostico}(\text{Deriva de Zero / Acúmulo de Resíduo na Célula WT-301}) \\
+\mathcal{R}_{07} &: (\neg p_{\text{KSA401}}) \implies \text{CausaRaiz}(\text{Falha de Comunicação GigE ou Software da Câmera Travado}) \\
+\mathcal{R}_{08} &: (\text{TaxaRejeicaoAlta}) \implies \text{Diagnostico}(\text{Matéria-Prima com Alto Índice de Contaminação/Pragas}) \\
+\mathcal{R}_{09} &: (p_{\text{KSA401}} \land p_{\text{XS401}} \land \text{RejeicaoAnomalaConsecutiva}) \implies \text{CausaRaiz}(\text{Lente Obstruída por Poeira ou Falha na Iluminação LED}) \\
+\mathcal{R}_{10} &: (p_{\text{PAL601}}) \implies \text{CausaRaiz}(\text{Queda Crítica de Pressão no Suprimento Pneumático Principal}) \\
+\mathcal{R}_{11} &: (c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}) \implies \text{CausaRaiz}(\text{Queima da Bobina Solenoide FY-603 ou Travamento Mecânico do Carretel}) \\
+\mathcal{R}_{12} &: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{Silo de Rejeito Categoria C Saturado (100\%) - Risco de Transbordo})
 \end{aligned}$$
 
 Regras de Intertravamento e Ação Automática derivadas da matriz de segurança (Aula 07):
@@ -787,7 +787,7 @@ Um corpo estranho bloqueia o tambor da esteira de alta velocidade:
 
 ### Execução e Dedução:
 O motor de inferência dispara imediatamente a Regra `[R03]`, deduzindo com severidade **CRÍTICA**:
-$$\text{CausaRaiz} = \text{"Travamento Mecânico no Rolo ou Motor da Esteira"}$$
+$$\text{CausaRaiz} = \text{Travamento Mecânico no Rolo ou Motor da Esteira}$$
 **Prescrição enviada à IHM:** Bloqueio elétrico imediato (LOTO), proibição de rearme automático e inspeção mecânica dos mancais de rolamento.
 
 ---
