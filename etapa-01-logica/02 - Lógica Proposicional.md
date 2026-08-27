@@ -77,7 +77,7 @@ De acordo com o descritivo do processo, a planta só pode partir se: não houver
 c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
 ```
 
-**Leitura:** a planta está liberada **se e somente se** não houver sobrecarga no motor da esteira **E** não houver pressão baixa na linha pneumática **E** a câmera estiver pronta/OK.
+**Leitura:** a planta está liberada **se e somente se** não houver emergência ativa (`¬p_EMERG`) **E** não houver sobrecarga no motor da esteira (`¬p_JI201`) **E** não houver pressão baixa na linha pneumática (`¬p_PAL601`) **E** a câmera estiver pronta/OK (`p_KSA401`).
 
 ### Tabela-verdade
 
@@ -101,7 +101,7 @@ c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
 | 1 | 1 | 1 | 0 | 0 |
 | 1 | 1 | 1 | 1 | 0 |
 
-Apenas a primeira linha libera a planta — é a única combinação em que todas as condições de segurança estão satisfeitas simultaneamente.
+Apenas a segunda linha libera a planta (`c_PERM = 1`) — é a única combinação em que todas as condições de segurança e disponibilidade estão satisfeitas simultaneamente (`p_EMERG = 0`, `p_JI201 = 0`, `p_PAL601 = 0` e `p_KSA401 = 1`).
 
 ---
 

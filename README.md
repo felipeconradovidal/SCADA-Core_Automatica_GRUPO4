@@ -12,8 +12,8 @@
   - [4.3 Pesagem Contínua](#43-pesagem-contínua)
   - [4.4 Inspeção por Visão Computacional](#44-inspeção-por-visão-computacional)
   - [4.5 Classificação do tipo dos grãos agrícolas](#45-classificação-do-tipo-dos-grãos-agrícolas)
-  - [4.5 Sistema de Ejeção Pneumática](#45-sistema-de-ejeção-pneumática)
-  - [4.5 Coleta e Monitoramento](#45-coleta-e-monitoramento)
+  - [4.6 Sistema de Ejeção Pneumática](#46-sistema-de-ejeção-pneumática)
+  - [4.7 Coleta e Monitoramento](#47-coleta-e-monitoramento)
 - [5. Categoria do Produto Processado](#5-categoria-do-produto-processado)
   - [5.1 Categoria A - Produto Aprovado](#51-categoria-a---produto-aprovado)
   - [5.2 Categoria B - Produto Secundário](#52-categoria-b---produto-secundário)
@@ -245,6 +245,9 @@ O sistema deverá identificar a posição do grão na esteira e acionar o atuado
 
 A lógica simplificada é:
 
+$$c_{\text{FY603}} \equiv p_{\text{C}} \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}$$
+
+*(O atuador só é acionado se o grão for classificado como Categoria C, estiver posicionado no bocal de sopro e a pressão pneumática for suficiente).*
 
 É fundamental para o funcionamento correto da planta a sincronização entre:
 
@@ -267,7 +270,7 @@ A planta poderá possuir:
 - Recipiente para produtos secundários;
 - Recipiente para produtos rejeitados.
 
-Cada recipiente poderá possuir sensores de nível ou massa para determinar quando sua capacidade.
+Cada recipiente poderá possuir sensores de nível ou massa para determinar quando sua capacidade máxima for atingida.
 
 Já em relação ao monitoramento, com base nos dados obtidos a partir das etapas anteriores, pode-se obter a vazão atual, a massa processada, rendimento em relação a cada Categoria (Aprovado, Secundário ou Rejeitado).
 Além de poder estipular o número de grãos total, o faturamento em cima dos grãos já processados, entre outros.
