@@ -1,7 +1,7 @@
 /**
  * SCADA-Core Automática - Módulo Principal de IHM & Supervisão (scada.js)
- * Renderizador do Sinótico Industrial 2D em Canvas, Gerenciador de Alarmes ISA 18.2
- * e Controle Operacional.
+ * Renderizador do Sinótico Industrial 2D em Canvas, Gerenciador de Alarmes ISA 18.2,
+ * Fila de Tracking FIFO do CLP e Memorial Explicativo.
  */
 
 import { PLCLogic } from './logic.js';
@@ -25,7 +25,7 @@ export class SCADASystem {
 
     // Histórico de Alarmes (ISA 18.2)
     this.alarmList = [];
-    this.lastAlarmStates = {};
+    this.lastFaultEjector = false;
 
     this.lastTimestamp = performance.now();
     this.chartSampleAccumulator = 0;
@@ -37,9 +37,8 @@ export class SCADASystem {
   }
 
   initUI() {
-    // Ajusta resolução do canvas sinótico para nitidez
     if (this.synopticCanvas) {
-      this.synopticCanvas.width = 900;
+      this.synopticCanvas.width = 920;
       this.synopticCanvas.height = 360;
     }
     if (this.cameraCanvas) {
@@ -48,11 +47,11 @@ export class SCADASystem {
     }
     if (this.flowCanvas) {
       this.flowCanvas.width = 320;
-      this.flowCanvas.height = 110;
+      this.flowCanvas.height = 100;
     }
     if (this.distCanvas) {
       this.distCanvas.width = 320;
-      this.distCanvas.height = 70;
+      this.distCanvas.height = 65;
     }
   }
 
@@ -64,11 +63,14 @@ export class SCADASystem {
     const btnAck = document.getElementById('btnAck');
     const btnRefill = document.getElementById('btnRefill');
     const btnEmptyC = document.getElementById('btnEmptyC');
+    const btnEmptyB = document.getElementById('btnEmptyB');
     const sliderSpeed = document.getElementById('sliderSpeed');
+    const btnOpenGuide = document.getElementById('btnOpenGuide');
+    const btnCloseGuide = document.getElementById('btnCloseGuide');
+    const guideModal = document.getElementById('guideModal');
 
     if (btnStart) {
       btnStart.addEventListener('click', () => {
-        // Partida: se houver permissivo, liga
         if (this.plc.outputs.c_PERM) {
           this.sim.conveyor.speedSetpoint = parseFloat(sliderSpeed.value);
           this.logAlarm('COMANDO', 'Comando de PARTIDA enviado pelo operador.', 'INFO');
@@ -118,6 +120,13 @@ export class SCADASystem {
       });
     }
 
+    if (btnEmptyB) {
+      btnEmptyB.addEventListener('click', () => {
+        this.sim.emptySiloB();
+        this.logAlarm('PROCESSO', 'Silo B (Secundário) esvaziado pelo operador.', 'INFO');
+      });
+    }
+
     if (sliderSpeed) {
       sliderSpeed.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
@@ -125,6 +134,18 @@ export class SCADASystem {
         if (this.sim.conveyor.actualSpeed > 0) {
           this.sim.conveyor.speedSetpoint = val;
         }
+      });
+    }
+
+    // Modal Explicativo da Planta
+    if (btnOpenGuide && guideModal) {
+      btnOpenGuide.addEventListener('click', () => {
+        guideModal.classList.remove('hidden');
+      });
+    }
+    if (btnCloseGuide && guideModal) {
+      btnCloseGuide.addEventListener('click', () => {
+        guideModal.classList.add('hidden');
       });
     }
 
@@ -148,8 +169,8 @@ export class SCADASystem {
     });
 
     this.setupFaultToggle('faultPistonJam', (active) => {
-      this.sim.pneumatics.isJammed = active;
-      if (active) this.logAlarm('FY-603', 'Simulação de travamento mecânico do pistão ejetor!', 'MÉDIO');
+      this.sim.pneumatics.isJammedC = active;
+      if (active) this.logAlarm('FY-603', 'Simulação de travamento mecânico do pistão ejetor C! (Discrepância com sensor ZSH-601)', 'ALTO');
     });
 
     this.setupFaultToggle('faultSiloCFull', (active) => {
@@ -219,13 +240,21 @@ export class SCADASystem {
     // 1. Atualiza Física & Controle
     this.sim.update(dt);
 
-    // 2. Renderiza Sinótico Principal
+    // 2. Disparo de alarme ao detectar falha de ejetor
+    if (this.plc.diagnostics.p_FALHA_EJETOR && !this.lastFaultEjector) {
+      this.lastFaultEjector = true;
+      this.logAlarm('ZSH-601/FY-603', 'FALHA DE EJEÇÃO: Comando FY-603 ativo sem confirmação de sensor magnético ZSH-601!', 'CRÍTICO');
+    } else if (!this.plc.diagnostics.p_FALHA_EJETOR) {
+      this.lastFaultEjector = false;
+    }
+
+    // 3. Renderiza Sinótico Principal
     this.renderSynoptic();
 
-    // 3. Renderiza Câmera HUD
+    // 4. Renderiza Câmera HUD
     this.vision.renderCameraHUD(this.cameraCanvas, this.vision.lastInspectedGrain);
 
-    // 4. Atualiza Gráficos (1x por seg)
+    // 5. Atualiza Gráficos (1x por seg)
     this.chartSampleAccumulator += dt;
     if (this.chartSampleAccumulator >= 0.5) {
       this.chartSampleAccumulator = 0;
@@ -234,7 +263,7 @@ export class SCADASystem {
       this.charts.renderDistribution(this.sim.stats.catACount, this.sim.stats.catBCount, this.sim.stats.catCCount);
     }
 
-    // 5. Atualiza Displays e LEDs do SCADA
+    // 6. Atualiza Displays, Fila de Tracking e LEDs do SCADA
     this.updateDashboard();
 
     requestAnimationFrame(this.animate);
@@ -260,17 +289,17 @@ export class SCADASystem {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
 
-    const { hopperX, scaleStartX, scaleEndX, cameraX, ejectorX, deflectorBX, endConveyorX, conveyorY, conveyorHeight } = this.sim.layout;
+    const { hopperX, scaleStartX, scaleEndX, cameraX, ejectorCX, ejectorBX, endConveyorX, conveyorY, conveyorHeight } = this.sim.layout;
 
     // 1. SILOS DE COLETA (Destinos A, B, C)
-    // Silo C (Rejeito) - Sob o ejetor
-    this.drawSilo(ctx, ejectorX - 25, conveyorY + 55, 50, 70, 'SILO C', '#ff1744', this.sim.silos.siloC.levelPercent, `LIT-703: ${this.sim.silos.siloC.levelPercent.toFixed(0)}%`);
+    // Silo C (Rejeito) - Sob o ejetor C
+    this.drawSilo(ctx, ejectorCX - 25, conveyorY + 55, 52, 75, 'SILO C (Rejeito)', '#ff1744', this.sim.silos.siloC.levelPercent, `LIT-703: ${this.sim.silos.siloC.levelPercent.toFixed(0)}%`);
 
-    // Silo B (Secundário) - Intermediário
-    this.drawSilo(ctx, deflectorBX - 20, conveyorY + 55, 50, 70, 'SILO B', '#ffb300', (this.sim.silos.siloB.count % 100), `${this.sim.silos.siloB.count} un`);
+    // Silo B (Secundário) - Sob o ejetor B
+    this.drawSilo(ctx, ejectorBX - 25, conveyorY + 55, 52, 75, 'SILO B (Secundário)', '#ffb300', this.sim.silos.siloB.levelPercent, `${this.sim.silos.siloB.count} un`);
 
     // Silo A (Aprovado) - Fim de Linha
-    this.drawSilo(ctx, endConveyorX + 5, conveyorY + 30, 55, 95, 'SILO A', '#00e676', (this.sim.silos.siloA.count % 100), `${this.sim.silos.siloA.count} un`);
+    this.drawSilo(ctx, endConveyorX + 5, conveyorY + 30, 58, 100, 'SILO A (Aprovado)', '#00e676', (this.sim.silos.siloA.count % 100), `${this.sim.silos.siloA.count} un`);
 
     // 2. FUNIL DE RECEPÇÃO & ALIMENTADOR VIBRATÓRIO
     this.drawHopper(ctx, hopperX, conveyorY - 140, 70, 110, this.sim.hopper.level, this.plc.outputs.c_ALIM);
@@ -284,10 +313,13 @@ export class SCADASystem {
     // 5. ESTAÇÃO DE VISÃO COMPUTACIONAL (XS-401 / KSA-401)
     this.drawVisionStation(ctx, cameraX, conveyorY, this.plc.inputs.p_KSA401);
 
-    // 6. ESTAÇÃO DE EJEÇÃO PNEUMÁTICA (FY-603 / ZSH-601 / PT-601)
-    this.drawEjectorStation(ctx, ejectorX, conveyorY, this.sim.pneumatics.pistonStroke, this.sim.pneumatics.blowEffect, this.plc.outputs.c_FY603);
+    // 6. ESTAÇÃO 1: EJETOR PNEUMÁTICO C (FY-603 / ZSH-601 / PT-601)
+    this.drawEjectorStation(ctx, ejectorCX, conveyorY, this.sim.pneumatics.pistonStrokeC, this.sim.pneumatics.blowEffectC, this.plc.outputs.c_FY603, 'FY-603 (Ejetor C)', 'ZSH-601', '#ff1744', this.sim.pneumatics.isJammedC);
 
-    // 7. GRÃOS EM TRÂNSITO NA ESTEIRA E EM QUEDA
+    // 7. ESTAÇÃO 2: EJETOR PNEUMÁTICO B (FY-602 / ZSH-602)
+    this.drawEjectorStation(ctx, ejectorBX, conveyorY, this.sim.pneumatics.pistonStrokeB, this.sim.pneumatics.blowEffectB, this.plc.outputs.c_FY602, 'FY-602 (Ejetor B)', 'ZSH-602', '#ffb300', this.sim.pneumatics.isJammedB);
+
+    // 8. GRÃOS EM TRÂNSITO NA ESTEIRA E EM QUEDA
     this.drawGrains(ctx);
   }
 
@@ -345,24 +377,20 @@ export class SCADASystem {
   }
 
   drawConveyor(ctx, x, y, len, h, speed, offset) {
-    // Suporte da estrutura metálica
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(x, y + h, len, 8);
 
-    // Pés de suporte
     ctx.fillStyle = '#334155';
     for (let px = x + 30; px < x + len; px += 180) {
       ctx.fillRect(px, y + h + 8, 8, 45);
     }
 
-    // Lona da esteira
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(x, y, len, h);
     ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(x, y, len, h);
 
-    // Roletes em movimento
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.lineWidth = 2;
     for (let rx = x + (offset % 25); rx < x + len; rx += 25) {
@@ -372,14 +400,12 @@ export class SCADASystem {
       ctx.stroke();
     }
 
-    // Tambores de tração nas pontas
     ctx.fillStyle = '#475569';
     ctx.beginPath();
     ctx.arc(x, y + h / 2, h / 2, 0, Math.PI * 2);
     ctx.arc(x + len, y + h / 2, h / 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Motor da Esteira (JI-201 / ST-201)
     ctx.fillStyle = this.sim.conveyor.isOverloaded ? '#ef4444' : (speed > 0 ? '#10b981' : '#64748b');
     ctx.fillRect(x - 22, y + 2, 18, 26);
     ctx.fillStyle = '#ffffff';
@@ -396,11 +422,9 @@ export class SCADASystem {
     ctx.lineWidth = 1;
     ctx.strokeRect(startX, y - 4, len, 6);
 
-    // Célula de carga abaixo da esteira
     ctx.fillStyle = '#0284c7';
     ctx.fillRect(startX + len / 2 - 12, y + 32, 24, 8);
 
-    // Tag WT-301
     ctx.fillStyle = '#38bdf8';
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
@@ -410,7 +434,6 @@ export class SCADASystem {
   }
 
   drawVisionStation(ctx, x, y, camOk) {
-    // Pórtico da câmera
     ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -420,15 +443,12 @@ export class SCADASystem {
     ctx.lineTo(x + 25, y);
     ctx.stroke();
 
-    // Corpo da Câmera KSA-401
     ctx.fillStyle = camOk ? '#0284c7' : '#ef4444';
     ctx.fillRect(x - 14, y - 72, 28, 22);
 
-    // Lente e Iluminador LED
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(x - 7, y - 50, 14, 5);
 
-    // Feixe Óptico / Laser de Trigger XS-401
     ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
     ctx.beginPath();
     ctx.moveTo(x - 7, y - 45);
@@ -438,7 +458,6 @@ export class SCADASystem {
     ctx.closePath();
     ctx.fill();
 
-    // Tag KSA-401
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
@@ -447,12 +466,10 @@ export class SCADASystem {
     ctx.fillText('XS-401', x, y - 28);
   }
 
-  drawEjectorStation(ctx, x, y, stroke, blowEffect, isFiring) {
-    // Suporte do Atuador Pneumático
-    ctx.fillStyle = '#334155';
+  drawEjectorStation(ctx, x, y, stroke, blowEffect, isFiring, title, sensorTag, color, isJammed) {
+    ctx.fillStyle = isJammed ? '#7f1d1d' : '#334155';
     ctx.fillRect(x - 12, y - 85, 24, 40);
 
-    // Linha de Pressão PT-601
     ctx.strokeStyle = this.plc.inputs.p_PAL601 ? '#ef4444' : '#38bdf8';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -460,23 +477,21 @@ export class SCADASystem {
     ctx.lineTo(x, y - 105);
     ctx.stroke();
 
-    // Haste do Pistão Pneumático (Avanço = stroke * 20px)
     const rodLength = 10 + stroke * 25;
     ctx.fillStyle = '#e2e8f0';
     ctx.fillRect(x - 3, y - 45, 6, rodLength);
 
-    // Bocal de Sopro / Ponteira
-    ctx.fillStyle = isFiring ? '#ff1744' : '#64748b';
+    ctx.fillStyle = isFiring ? color : '#64748b';
     ctx.fillRect(x - 8, y - 45 + rodLength, 16, 5);
 
-    // Sensor Magnético ZSH-601
-    const sensorActive = this.plc.inputs.p_ZSH601;
+    // Sensor de posição magnético
+    const sensorActive = stroke > 0.85;
     ctx.fillStyle = sensorActive ? '#00e676' : '#475569';
     ctx.fillRect(x + 14, y - 60, 6, 10);
 
-    // Jato de Ar Comprimido (Efeito Visual de Sopro)
+    // Jato de ar
     if (blowEffect > 0) {
-      ctx.fillStyle = `rgba(0, 240, 255, ${blowEffect * 0.7})`;
+      ctx.fillStyle = `rgba(0, 240, 255, ${blowEffect * 0.75})`;
       ctx.beginPath();
       ctx.moveTo(x - 6, y - 38 + rodLength);
       ctx.lineTo(x + 6, y - 38 + rodLength);
@@ -486,24 +501,21 @@ export class SCADASystem {
       ctx.fill();
     }
 
-    // Tag FY-603
     ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 9px monospace';
+    ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('FY-603', x, y - 110);
+    ctx.fillText(title, x, y - 110);
     ctx.font = '8px monospace';
-    ctx.fillText('ZSH-601', x + 25, y - 52);
+    ctx.fillText(sensorTag, x + 25, y - 52);
   }
 
   drawSilo(ctx, x, y, w, h, title, color, levelPercent, subtext) {
-    // Corpo do Silo
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.strokeRect(x, y, w, h);
 
-    // Nível interno
     if (levelPercent > 0) {
       const fillH = (h - 6) * Math.min(1.0, levelPercent / 100);
       ctx.fillStyle = color;
@@ -512,9 +524,8 @@ export class SCADASystem {
       ctx.globalAlpha = 1.0;
     }
 
-    // Título e Rótulo
     ctx.fillStyle = color;
-    ctx.font = 'bold 9px monospace';
+    ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(title, x + w / 2, y + 14);
 
@@ -535,7 +546,6 @@ export class SCADASystem {
       ctx.ellipse(g.x, g.y, (g.length || 6) * 0.8, (g.width || 2) * 0.8, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Destaque de classificação se já foi inspecionado
       if (g.classifiedCategory) {
         ctx.strokeStyle = g.classifiedCategory === 'A' ? '#00e676' : g.classifiedCategory === 'B' ? '#ffb300' : '#ff1744';
         ctx.lineWidth = 1;
@@ -581,6 +591,7 @@ export class SCADASystem {
     this.updateLed('led_c_PERM_sub', this.plc.outputs.c_PERM);
     this.updateLed('led_c_ALIM', this.plc.outputs.c_ALIM);
     this.updateLed('led_c_FY603', this.plc.outputs.c_FY603);
+    this.updateLed('led_c_FY602', this.plc.outputs.c_FY602);
     this.updateLed('led_p_EMERG', this.plc.inputs.p_EMERG, true);
     this.updateLed('led_p_JI201', this.plc.inputs.p_JI201, true);
     this.updateLed('led_p_PAL601', this.plc.inputs.p_PAL601, true);
@@ -588,9 +599,35 @@ export class SCADASystem {
     this.updateLed('led_p_NC703', this.plc.inputs.p_NC703, true);
     this.updateLed('led_p_MOV201', this.plc.inputs.p_MOV201);
     this.updateLed('led_p_NB101', this.plc.inputs.p_NB101, true);
-    this.updateLed('led_p_C', this.plc.inputs.p_POS603);
     this.updateLed('led_p_POS603', this.plc.inputs.p_POS603);
+    this.updateLed('led_p_POS602', this.plc.inputs.p_POS602);
     this.updateLed('led_p_ZSH601', this.plc.inputs.p_ZSH601);
+    this.updateLed('led_p_ZSH602', this.plc.inputs.p_ZSH602);
+    this.updateLed('led_falha_ejetor', this.plc.diagnostics.p_FALHA_EJETOR, true);
+
+    // 5. Renderiza a Fila de Tracking FIFO / Shift Register
+    this.renderTrackingQueue();
+  }
+
+  renderTrackingQueue() {
+    const container = document.getElementById('trackingQueueList');
+    if (!container) return;
+
+    if (this.sim.trackingQueue.length === 0) {
+      container.innerHTML = `<div class="text-[10px] text-slate-500 font-mono py-1">Fila vazia. Aguardando grãos após KSA-401...</div>`;
+      return;
+    }
+
+    container.innerHTML = this.sim.trackingQueue.slice(0, 6).map(item => `
+      <div class="flex items-center justify-between text-[10px] font-mono py-0.5 px-1.5 rounded bg-slate-950 border border-slate-800">
+        <span class="text-slate-400">#${item.id}</span>
+        <span class="font-bold ${
+          item.category === 'A' ? 'text-emerald-400' : item.category === 'B' ? 'text-amber-400' : 'text-red-400'
+        }">Cat ${item.category}</span>
+        <span class="text-cyan-400">Pos: ${item.x}px</span>
+        <span class="text-slate-400">${item.category !== 'A' ? '⏱ ' + item.timeToTarget + 's' : '➔ Fim'}</span>
+      </div>
+    `).join('');
   }
 
   updateElementText(id, text) {
@@ -602,9 +639,9 @@ export class SCADASystem {
     const el = document.getElementById(id);
     if (!el) return;
     if (isAlarmType) {
-      el.className = `w-3 h-3 rounded-full ${state ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-slate-700'}`;
+      el.className = `w-2.5 h-2.5 rounded-full ${state ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-slate-700'}`;
     } else {
-      el.className = `w-3 h-3 rounded-full ${state ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-700'}`;
+      el.className = `w-2.5 h-2.5 rounded-full ${state ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-700'}`;
     }
   }
 }

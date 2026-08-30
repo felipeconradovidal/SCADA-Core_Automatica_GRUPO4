@@ -27,16 +27,21 @@ export class PLCLogic {
       p_NA703: false,     // Silo C cheio / Alarme (> 90%)
       p_NC703: false,     // Silo C Nível Crítico / Bloqueio (≥ 100%)
       
-      // Ejeção Pneumática
-      p_POS603: false,    // Grão C na posição de disparo do ejetor
-      p_ZSH601: false,    // Sensor magnético de confirmação de avanço do pistão
+      // Ejeção Pneumática Ejetor C (Rejeito)
+      p_POS603: false,    // Grão C na posição física de disparo do ejetor C
+      p_ZSH601: false,    // Sensor magnético de confirmação de avanço do pistão C
+      
+      // Ejeção Pneumática Ejetor B (Secundário)
+      p_POS602: false,    // Grão B na posição física de disparo do ejetor B
+      p_ZSH602: false,    // Sensor magnético de confirmação de avanço do pistão B
     };
 
     // Saídas de Controle do CLP
     this.outputs = {
       c_PERM: false,      // Permissão Geral de Operação
       c_ALIM: false,      // Comando de acionamento do alimentador vibratório
-      c_FY603: false,     // Comando de disparo da válvula solenoide do ejetor C
+      c_FY603: false,     // Comando de disparo da válvula solenoide do ejetor C (Rejeito)
+      c_FY602: false,     // Comando de disparo da válvula solenoide do ejetor B (Secundário)
     };
 
     // Diagnóstico e Alarmes
@@ -51,15 +56,14 @@ export class PLCLogic {
     };
 
     // Temporizador para diagnóstico de falha de pistão
-    this.ejectorTimer = 0;
-    this.ejectorPendingCheck = false;
+    this.ejectorTimerC = 0;
+    this.ejectorTimerB = 0;
   }
 
   /**
    * Avalia a cadeia lógica completa do CLP
-   * @param {Object} currentGrain Grão atualmente posicionado na estação de visão (opcional)
    */
-  evaluate(currentGrain = null) {
+  evaluate() {
     // 1. Permissão Geral de Operação:
     // c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC703 )
     this.outputs.c_PERM = 
@@ -80,7 +84,15 @@ export class PLCLogic {
     // c_FY603 ↔ ( p_C ∧ p_POS603 ∧ ¬p_PAL601 )
     this.outputs.c_FY603 = this.inputs.p_POS603 && !this.inputs.p_PAL601;
 
-    // 5. Diagnóstico e Alarmes
+    // 5. Comando de Disparo do Ejetor da Categoria B:
+    // c_FY602 ↔ ( p_B ∧ p_POS602 ∧ ¬p_PAL601 )
+    this.outputs.c_FY602 = this.inputs.p_POS602 && !this.inputs.p_PAL601;
+
+    // 6. Diagnóstico de Falha dos Ejetores (Discrepância Temporal entre Comando e Sensor de Posição):
+    // p_FALHA_EJETOR ↔ (c_FY603 ∧ ¬p_ZSH601 após T) ∨ (c_FY602 ∧ ¬p_ZSH602 após T)
+    // Atualizado com temporizador no motor de simulação
+
+    // 7. Alarmes do Processo
     this.diagnostics.alarme_EMERG = this.inputs.p_EMERG;
     this.diagnostics.alarme_JI201 = this.inputs.p_JI201;
     this.diagnostics.alarme_PAL601 = this.inputs.p_PAL601;
