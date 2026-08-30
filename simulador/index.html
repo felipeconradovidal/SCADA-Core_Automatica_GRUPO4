@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCADA-Core Automática | Digital Twin & Simulador Industrial</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-[#090e17] text-slate-100 min-h-screen flex flex-col">
+
+  <!-- TOP HEADER / SCADA STATUS BAR -->
+  <header class="bg-[#0f172a] border-b border-slate-800 px-6 py-3 flex flex-wrap items-center justify-between shadow-lg">
+    <div class="flex items-center space-x-4">
+      <div class="w-9 h-9 rounded-lg bg-cyan-950 border border-cyan-500/50 flex items-center justify-center text-cyan-400 font-black text-xl shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+        ⚡
+      </div>
+      <div>
+        <h1 class="text-base font-black tracking-wider uppercase text-white flex items-center gap-2">
+          SCADA-Core Automática <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-400 font-mono font-normal">PLANT-01 / GRUPO 4</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">Classificação Óptica de Grãos por Visão Computacional & Ejeção Pneumática (ISA 5.1)</p>
+      </div>
+    </div>
+
+    <!-- Status Global da Planta -->
+    <div class="flex items-center space-x-6">
+      <div class="flex items-center space-x-2">
+        <span class="text-xs text-slate-400 uppercase font-mono">Status:</span>
+        <div id="plantStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-cyan-950 text-cyan-400 border border-cyan-700">
+          ● PRONTO / AGUARDANDO PARTIDA
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center space-x-4 text-xs font-mono text-slate-400 border-l border-slate-800 pl-4">
+        <div>CLP: <span class="text-emerald-400 font-bold">ONLINE</span></div>
+        <div>SCAN: <span class="text-cyan-400 font-bold">10 ms</span></div>
+        <div>MODO: <span class="text-amber-400 font-bold">AUTOMÁTICO</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL (DASHBOARD SCADA) -->
+  <main class="flex-1 p-4 grid grid-cols-1 xl:grid-cols-12 gap-4 max-w-[1800px] w-full mx-auto">
+
+    <!-- COLUNA ESQUERDA: SINÓTICO E FEED DE VISÃO (8 COLUNAS) -->
+    <section class="xl:col-span-8 flex flex-col gap-4">
+      
+      <!-- 1. SINÓTICO DA PLANTA INDUSTRIAL -->
+      <div class="scada-panel p-4 flex flex-col">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Sinótico do Processo (Linha de Classificação)</h2>
+          </div>
+          <span class="text-[10px] font-mono text-slate-500">MÉTODO: DIGITAL TWIN 2D (CINEMÁTICA REAL)</span>
+        </div>
+
+        <div class="relative w-full overflow-x-auto rounded-lg bg-[#0b1320] border border-slate-800/80 flex items-center justify-center p-1">
+          <canvas id="synopticCanvas" class="w-full max-w-[900px] h-auto"></canvas>
+        </div>
+
+        <!-- Barra de Instrumentação em Tempo Real abaixo do Sinótico -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-3 pt-2 border-t border-slate-800/60 font-mono text-center">
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400">ST-201 (Velocidade)</div>
+            <div id="dispSpeed" class="text-sm font-bold text-cyan-400">0.00 m/s</div>
+            <div id="dispSpeedMin" class="text-[9px] text-slate-500">0.0 m/min</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400">FT-301 (Vazão Mássica)</div>
+            <div id="dispMassFlow" class="text-sm font-bold text-emerald-400">0.0 kg/h</div>
+            <div class="text-[9px] text-slate-500">Balança WT-301</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400">PT-601 (Pressão Ar)</div>
+            <div id="dispPressure" class="text-sm font-bold text-sky-400">6.2 bar</div>
+            <div class="text-[9px] text-slate-500">Mín: 4.5 bar</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400">JI-201 (Corrente M1)</div>
+            <div id="dispCurrent" class="text-sm font-bold text-amber-400">0.4 A</div>
+            <div class="text-[9px] text-slate-500">Nominal: 3.2 A</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded border border-slate-800 col-span-2 sm:col-span-1">
+            <div class="text-[10px] text-slate-400">TOTAL PROCESSADO</div>
+            <div id="cntTotal" class="text-sm font-black text-white">0</div>
+            <div class="text-[9px] text-slate-500">Grãos de Arroz</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. PAINEL DE LÓGICA PROPOSICIONAL & PERMISSIVOS DO CLP -->
+      <div class="scada-panel p-4">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">CLP Virtual - Lógica Proposicional & Intertravamentos (ISA 5.1)</h2>
+          </div>
+          <span class="text-[10px] font-mono text-emerald-400 font-bold">ÁLGEBRA BOOLEANA AO VIVO</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          
+          <!-- Equação 1: Permissivo Geral -->
+          <div class="bg-slate-900/90 p-3 rounded border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold text-cyan-400 font-mono">c_PERM (Permissão Geral)</span>
+                <div id="led_c_PERM" class="w-3 h-3 rounded-full bg-slate-700"></div>
+              </div>
+              <p class="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded border border-slate-800/80 mb-2">
+                c_PERM ↔ (¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC703)
+              </p>
+            </div>
+            <div class="grid grid-cols-5 gap-1 text-[9px] font-mono text-center pt-2 border-t border-slate-800">
+              <div title="Emergência"><div id="led_p_EMERG" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>EMERG</div>
+              <div title="Sobrecarga Motor"><div id="led_p_JI201" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>JI201</div>
+              <div title="Pressão Baixa"><div id="led_p_PAL601" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>PAL601</div>
+              <div title="Câmera OK"><div id="led_p_KSA401" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>KSA401</div>
+              <div title="Nível Crítico Silo C"><div id="led_p_NC703" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>NC703</div>
+            </div>
+          </div>
+
+          <!-- Equação 2: Alimentador Vibratório -->
+          <div class="bg-slate-900/90 p-3 rounded border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold text-amber-400 font-mono">c_ALIM (Alimentador)</span>
+                <div id="led_c_ALIM" class="w-3 h-3 rounded-full bg-slate-700"></div>
+              </div>
+              <p class="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded border border-slate-800/80 mb-2">
+                c_ALIM ↔ (c_PERM ∧ p_MOV201 ∧ ¬p_NB101)
+              </p>
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-[9px] font-mono text-center pt-2 border-t border-slate-800">
+              <div><div id="led_c_PERM_sub" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>c_PERM</div>
+              <div><div id="led_p_MOV201" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>MOV201</div>
+              <div><div id="led_p_NB101" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>NB101</div>
+            </div>
+          </div>
+
+          <!-- Equação 3: Disparo do Ejetor C -->
+          <div class="bg-slate-900/90 p-3 rounded border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold text-red-400 font-mono">c_FY603 (Ejetor C)</span>
+                <div id="led_c_FY603" class="w-3 h-3 rounded-full bg-slate-700"></div>
+              </div>
+              <p class="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded border border-slate-800/80 mb-2">
+                c_FY603 ↔ (p_C ∧ p_POS603 ∧ ¬p_PAL601)
+              </p>
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-[9px] font-mono text-center pt-2 border-t border-slate-800">
+              <div><div id="led_p_C" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>p_C</div>
+              <div><div id="led_p_POS603" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>POS603</div>
+              <div><div id="led_p_ZSH601" class="w-2 h-2 mx-auto rounded-full bg-slate-700 mb-1"></div>ZSH601</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 3. QUADRO DE ALARMES ISA 18.2 -->
+      <div class="scada-panel p-4 flex-1">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-red-400"></span>
+            <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Quadro de Alarmes e Eventos (Norma ISA 18.2)</h2>
+          </div>
+          <button id="btnAck" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 active:scale-95 transition-all">
+            ✓ Reconhecer Alarmes (ACK)
+          </button>
+        </div>
+
+        <div class="overflow-y-auto max-h-[140px] rounded border border-slate-800 bg-[#090e17]">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-900 text-slate-400 text-[10px] font-mono uppercase sticky top-0 border-b border-slate-800">
+              <tr>
+                <th class="py-1.5 px-2">Timestamp</th>
+                <th class="py-1.5 px-2">Tag ISA</th>
+                <th class="py-1.5 px-2">Mensagem de Falha / Evento</th>
+                <th class="py-1.5 px-2">Prioridade</th>
+              </tr>
+            </thead>
+            <tbody id="alarmTableBody">
+              <tr>
+                <td colspan="4" class="text-center text-slate-500 py-3 text-xs">Nenhum alarme ativo. Sistema em condições normais.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- COLUNA DIREITA: VISÃO COMPUTACIONAL, CONTROLES E KPI (4 COLUNAS) -->
+    <aside class="xl:col-span-4 flex flex-col gap-4">
+      
+      <!-- 1. FEED DA CÂMERA DE VISÃO COMPUTACIONAL (KSA-401) -->
+      <div class="scada-panel p-4">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Visão Computacional (KSA-401 / XS-401)</h2>
+          </div>
+          <span class="text-[10px] font-mono text-cyan-400 font-bold">OPENCV / IA HUD</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+          <div class="rounded bg-[#0a1017] border border-slate-800 p-1 flex-shrink-0">
+            <canvas id="cameraCanvas" class="w-[200px] h-[150px]"></canvas>
+          </div>
+
+          <div class="flex-1 w-full space-y-1.5 text-xs font-mono">
+            <div class="bg-slate-900/90 p-2 rounded border border-slate-800">
+              <div class="text-[10px] text-slate-400">Classificação Instantânea:</div>
+              <div class="flex justify-between items-center mt-1">
+                <span class="text-emerald-400 font-bold">Cat A (Aprovado): <span id="cntCatA">0</span></span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-amber-400 font-bold">Cat B (Secundário): <span id="cntCatB">0</span></span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-red-400 font-bold">Cat C (Rejeitado): <span id="cntCatC">0</span></span>
+              </div>
+            </div>
+            
+            <div class="text-[9px] text-slate-400 bg-slate-950 p-1.5 rounded border border-slate-800">
+              Critérios: L: 6.0-7.5mm | W: 1.8-2.2mm | Sem Danos/Pragas
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. MESA DE COMANDO OPERACIONAL (IHM) -->
+      <div class="scada-panel p-4">
+        <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+          <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Mesa de Comando do Operador</h2>
+          <span class="text-[10px] font-mono text-slate-400">INTERFACE DE CONTROLE</span>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button id="btnStart" class="btn-industrial py-2 px-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs border border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+            ▶ Partida (START)
+          </button>
+          <button id="btnStop" class="btn-industrial py-2 px-3 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs border border-slate-500">
+            ⏹ Parada (STOP)
+          </button>
+        </div>
+
+        <div class="mb-3">
+          <button id="btnEmerg" class="btn-industrial btn-emergency w-full py-2.5 px-3 rounded text-white text-xs tracking-wider flex items-center justify-center gap-2">
+            🛑 PARADA DE EMERGÊNCIA (XA-901)
+          </button>
+        </div>
+
+        <!-- Ajuste de Velocidade da Esteira -->
+        <div class="bg-slate-900/80 p-2.5 rounded border border-slate-800 mb-2">
+          <div class="flex justify-between text-xs font-mono mb-1">
+            <span class="text-slate-400">Setpoint de Velocidade:</span>
+            <span id="lblSpeedVal" class="text-cyan-400 font-bold">0.80 m/s</span>
+          </div>
+          <input id="sliderSpeed" type="range" min="0.2" max="1.5" step="0.05" value="0.8" class="w-full accent-cyan-400 cursor-pointer">
+        </div>
+
+        <!-- Ações Auxiliares -->
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnRefill" class="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700 active:scale-95">
+            ⟳ Reabastecer Funil
+          </button>
+          <button id="btnEmptyC" class="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700 active:scale-95">
+            🗑 Esvaziar Silo C
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. INJEÇÃO DE FALHAS (TESTES DE ENGENHARIA DE AUTOMAÇÃO) -->
+      <div class="scada-panel p-4">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <h2 class="text-xs font-black tracking-wider uppercase text-amber-400 flex items-center gap-1.5">
+            ⚠️ Injeção de Falhas (Comissionamento Virtual)
+          </h2>
+        </div>
+
+        <p class="text-[10px] text-slate-400 mb-2">
+          Simule condições anormais para testar a resposta dos intertravamentos booleanos:
+        </p>
+
+        <div class="space-y-2 text-xs font-mono">
+          <label class="flex items-center justify-between p-1.5 rounded bg-slate-900/80 border border-slate-800 cursor-pointer hover:bg-slate-800/80">
+            <span class="text-slate-300">Queda de Pressão Pneumática (PAL-601)</span>
+            <input type="checkbox" id="faultAirPressure" class="accent-red-500 w-4 h-4 cursor-pointer">
+          </label>
+
+          <label class="flex items-center justify-between p-1.5 rounded bg-slate-900/80 border border-slate-800 cursor-pointer hover:bg-slate-800/80">
+            <span class="text-slate-300">Sobrecarga no Motor da Esteira (JI-201)</span>
+            <input type="checkbox" id="faultMotorOverload" class="accent-red-500 w-4 h-4 cursor-pointer">
+          </label>
+
+          <label class="flex items-center justify-between p-1.5 rounded bg-slate-900/80 border border-slate-800 cursor-pointer hover:bg-slate-800/80">
+            <span class="text-slate-300">Falha Câmera de Visão (KSA-401)</span>
+            <input type="checkbox" id="faultCameraFail" class="accent-red-500 w-4 h-4 cursor-pointer">
+          </label>
+
+          <label class="flex items-center justify-between p-1.5 rounded bg-slate-900/80 border border-slate-800 cursor-pointer hover:bg-slate-800/80">
+            <span class="text-slate-300">Travamento Mecânico Pistão (FY-603)</span>
+            <input type="checkbox" id="faultPistonJam" class="accent-red-500 w-4 h-4 cursor-pointer">
+          </label>
+
+          <label class="flex items-center justify-between p-1.5 rounded bg-slate-900/80 border border-slate-800 cursor-pointer hover:bg-slate-800/80">
+            <span class="text-slate-300">Silo C Cheio / Crítico (LIT-703)</span>
+            <input type="checkbox" id="faultSiloCFull" class="accent-red-500 w-4 h-4 cursor-pointer">
+          </label>
+        </div>
+      </div>
+
+      <!-- 4. HISTORIADOR & GRÁFICOS EM TEMPO REAL -->
+      <div class="scada-panel p-4 flex-1">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+          <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Tendência Temporal (FT-301 kg/h)</h2>
+          <span class="text-[10px] font-mono text-slate-400">HISTORIADOR</span>
+        </div>
+
+        <div class="rounded bg-[#0f172a] border border-slate-800 mb-2 overflow-hidden">
+          <canvas id="flowCanvas" class="w-full h-[90px]"></canvas>
+        </div>
+
+        <div class="rounded bg-[#0f172a] border border-slate-800 overflow-hidden">
+          <canvas id="distCanvas" class="w-full h-[60px]"></canvas>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- FOOTER TÉCNICO -->
+  <footer class="bg-[#0f172a] border-t border-slate-800 px-6 py-2 text-[11px] font-mono text-slate-500 flex flex-wrap justify-between items-center">
+    <div>SCADA-Core Automática © 2026 | Grupo 4 - Engenharia de Controle e Automação</div>
+    <div class="flex space-x-4">
+      <span>Normas: ISA 5.1 / ISA 18.2</span>
+      <span>Base Lógica: Proposicional & Predicados</span>
+    </div>
+  </footer>
+
+  <!-- Script Principal Modular -->
+  <script type="module" src="js/scada.js"></script>
+</body>
+</html>
