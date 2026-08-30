@@ -1,7 +1,7 @@
 /**
  * SCADA-Core Automática - Módulo Principal de IHM & Supervisão (scada.js)
- * Renderizador do Sinótico Industrial 2D com Infográficos Visuais Integrados,
- * Diagramas de Fluxo, Fila de Tracking e Alarmes ISA 18.2.
+ * Renderizador do Sinótico Industrial 2D com Zoom & Pan Interativo,
+ * Presets de Câmera, Infográficos Visuais, Fila de Tracking e Alarmes ISA 18.2.
  */
 
 import { PLCLogic } from './logic.js';
@@ -23,6 +23,21 @@ export class SCADASystem {
 
     this.charts = new SCADACharts(this.flowCanvas, this.distCanvas);
 
+    // Sistema de Câmera / Zoom & Pan Interativo do Sinótico
+    this.viewport = {
+      zoom: 1.0,
+      targetZoom: 1.0,
+      panX: 0,
+      targetPanX: 0,
+      panY: 0,
+      targetPanY: 0,
+      isDragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      minZoom: 0.75,
+      maxZoom: 3.5
+    };
+
     // Histórico de Alarmes
     this.alarmList = [];
     this.lastFaultEjector = false;
@@ -32,6 +47,7 @@ export class SCADASystem {
 
     this.initUI();
     this.initControls();
+    this.initZoomPanControls();
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
   }
@@ -133,7 +149,7 @@ export class SCADASystem {
       });
     }
 
-    // Injeção de Falhas com diagnóstico didático
+    // Injeção de Falhas
     this.setupFaultToggle('faultAirPressure', (active) => {
       this.sim.pneumatics.pressureBar = active ? 2.8 : 6.5;
       this.plc.inputs.p_PAL601 = active;
@@ -162,6 +178,130 @@ export class SCADASystem {
       this.sim.silos.siloC.count = active ? 200 : 40;
       if (active) this.logAlarm('LIT-703', 'Nível Crítico atingido no Silo C (100%) -> Bloqueio c_PERM!', 'CRÍTICO');
     });
+  }
+
+  initZoomPanControls() {
+    const canvas = this.synopticCanvas;
+    if (!canvas) return;
+
+    // 1. Mouse Drag (Pan)
+    canvas.addEventListener('mousedown', (e) => {
+      this.viewport.isDragging = true;
+      this.viewport.dragStartX = e.clientX - this.viewport.targetPanX;
+      this.viewport.dragStartY = e.clientY - this.viewport.targetPanY;
+      canvas.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!this.viewport.isDragging) return;
+      this.viewport.targetPanX = e.clientX - this.viewport.dragStartX;
+      this.viewport.targetPanY = e.clientY - this.viewport.dragStartY;
+      this.clampPan();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (this.viewport.isDragging) {
+        this.viewport.isDragging = false;
+        canvas.style.cursor = 'grab';
+      }
+    });
+
+    // 2. Wheel Zoom (centralizado no cursor do mouse)
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+      const newZoom = Math.max(this.viewport.minZoom, Math.min(this.viewport.maxZoom, this.viewport.targetZoom * zoomFactor));
+
+      // Ajusta o Pan para que o zoom ocorra onde o mouse está apontando
+      const scaleChange = newZoom / this.viewport.targetZoom;
+      this.viewport.targetPanX = mouseX - (mouseX - this.viewport.targetPanX) * scaleChange;
+      this.viewport.targetPanY = mouseY - (mouseY - this.viewport.targetPanY) * scaleChange;
+      this.viewport.targetZoom = newZoom;
+      this.clampPan();
+    }, { passive: false });
+
+    // 3. Botões de Zoom no HUD
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnZoomReset = document.getElementById('btnZoomReset');
+
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        this.setZoomAtCenter(this.viewport.targetZoom * 1.3);
+      });
+    }
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        this.setZoomAtCenter(this.viewport.targetZoom / 1.3);
+      });
+    }
+    if (btnZoomReset) {
+      btnZoomReset.addEventListener('click', () => {
+        this.resetCamera();
+      });
+    }
+
+    // 4. Botões Rápidos de Preset de Câmera
+    this.setupPresetBtn('btnPresetAll', () => this.resetCamera());
+    this.setupPresetBtn('btnPresetHopper', () => this.focusComponent(80, 190, 1.85));
+    this.setupPresetBtn('btnPresetScale', () => this.focusComponent(235, 230, 2.1));
+    this.setupPresetBtn('btnPresetVision', () => this.focusComponent(400, 200, 2.2));
+    this.setupPresetBtn('btnPresetEjectors', () => this.focusComponent(610, 210, 1.95));
+    this.setupPresetBtn('btnPresetSilos', () => this.focusComponent(800, 230, 1.7));
+
+    canvas.style.cursor = 'grab';
+  }
+
+  setupPresetBtn(id, callback) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      callback();
+      // Feedback visual no botão ativo
+      document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('bg-cyan-900', 'text-cyan-300', 'border-cyan-500'));
+      btn.classList.add('bg-cyan-900', 'text-cyan-300', 'border-cyan-500');
+    });
+  }
+
+  setZoomAtCenter(newZoom) {
+    const canvas = this.synopticCanvas;
+    if (!canvas) return;
+    const clampedZoom = Math.max(this.viewport.minZoom, Math.min(this.viewport.maxZoom, newZoom));
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    const scaleChange = clampedZoom / this.viewport.targetZoom;
+    this.viewport.targetPanX = cx - (cx - this.viewport.targetPanX) * scaleChange;
+    this.viewport.targetPanY = cy - (cy - this.viewport.targetPanY) * scaleChange;
+    this.viewport.targetZoom = clampedZoom;
+    this.clampPan();
+  }
+
+  focusComponent(worldX, worldY, zoom) {
+    const canvas = this.synopticCanvas;
+    if (!canvas) return;
+    this.viewport.targetZoom = zoom;
+    this.viewport.targetPanX = (canvas.width / 2) - (worldX * zoom);
+    this.viewport.targetPanY = (canvas.height / 2) - (worldY * zoom);
+    this.clampPan();
+  }
+
+  resetCamera() {
+    this.viewport.targetZoom = 1.0;
+    this.viewport.targetPanX = 0;
+    this.viewport.targetPanY = 0;
+  }
+
+  clampPan() {
+    const canvas = this.synopticCanvas;
+    if (!canvas) return;
+    const maxPanDist = 800 * this.viewport.targetZoom;
+    this.viewport.targetPanX = Math.max(-maxPanDist, Math.min(maxPanDist, this.viewport.targetPanX));
+    this.viewport.targetPanY = Math.max(-400 * this.viewport.targetZoom, Math.min(400 * this.viewport.targetZoom, this.viewport.targetPanY));
   }
 
   setupFaultToggle(elementId, callback) {
@@ -221,6 +361,11 @@ export class SCADASystem {
     const dt = Math.min(0.1, (now - this.lastTimestamp) / 1000);
     this.lastTimestamp = now;
 
+    // Interpolação suave do Zoom & Pan (Smooth Lerp)
+    this.viewport.zoom += (this.viewport.targetZoom - this.viewport.zoom) * Math.min(1.0, dt * 10.0);
+    this.viewport.panX += (this.viewport.targetPanX - this.viewport.panX) * Math.min(1.0, dt * 10.0);
+    this.viewport.panY += (this.viewport.targetPanY - this.viewport.panY) * Math.min(1.0, dt * 10.0);
+
     // 1. Atualiza Física & Controle
     this.sim.update(dt);
 
@@ -232,7 +377,7 @@ export class SCADASystem {
       this.lastFaultEjector = false;
     }
 
-    // 3. Renderiza Sinótico com Infográficos
+    // 3. Renderiza Sinótico com Zoom/Pan
     this.renderSynoptic();
 
     // 4. Renderiza Câmera HUD
@@ -259,53 +404,77 @@ export class SCADASystem {
     const w = this.synopticCanvas.width;
     const h = this.synopticCanvas.height;
 
-    // Fundo da Planta
+    // Fundo fixo da Planta
     ctx.fillStyle = '#0b1320';
     ctx.fillRect(0, 0, w, h);
 
-    // Grade sutil
+    // --- CAMADA FIXA SUPERIOR: INFOGRÁFICO DE PASSOS ---
+    this.drawProcessStepsHeader(ctx, w);
+
+    // --- CAMADA COM ZOOM E PAN INTERATIVO (MUNDO VIRTUAL DA PLANTA) ---
+    ctx.save();
+    
+    // Área de clip para não vazar o cabeçalho fixo
+    ctx.beginPath();
+    ctx.rect(0, 38, w, h - 38);
+    ctx.clip();
+
+    // Aplica a matriz de transformação do Pan & Zoom
+    ctx.translate(this.viewport.panX, this.viewport.panY);
+    ctx.scale(this.viewport.zoom, this.viewport.zoom);
+
+    // Grade de fundo que se move com o zoom/pan
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < w; x += 30) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    for (let x = -400; x < 1400; x += 30) {
+      ctx.beginPath(); ctx.moveTo(x, -200); ctx.lineTo(x, 600); ctx.stroke();
     }
-    for (let y = 0; y < h; y += 30) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    for (let y = -200; y < 600; y += 30) {
+      ctx.beginPath(); ctx.moveTo(-400, y); ctx.lineTo(1400, y); ctx.stroke();
     }
 
     const { hopperX, scaleStartX, scaleEndX, cameraX, ejectorCX, ejectorBX, endConveyorX, conveyorY, conveyorHeight } = this.sim.layout;
 
-    // --- INFOGRÁFICO SUPERIOR: ETAPAS NUMERADAS DO PROCESSO ---
-    this.drawProcessStepsHeader(ctx, w);
-
-    // --- 1. SILOS DE COLETA (Destinos A, B, C) ---
+    // 1. SILOS DE COLETA (Destinos A, B, C)
     this.drawSilo(ctx, ejectorCX - 28, conveyorY + 60, 56, 80, 'SILO C (Rejeito)', '#ff1744', this.sim.silos.siloC.levelPercent, `LIT-703: ${this.sim.silos.siloC.levelPercent.toFixed(0)}%`, 'Grãos defeituosos');
     this.drawSilo(ctx, ejectorBX - 28, conveyorY + 60, 56, 80, 'SILO B (Secundário)', '#ffb300', this.sim.silos.siloB.levelPercent, `${this.sim.silos.siloB.count} un`, 'Grãos toleráveis');
     this.drawSilo(ctx, endConveyorX + 5, conveyorY + 30, 62, 110, 'SILO A (Aprovado)', '#00e676', (this.sim.silos.siloA.count % 100), `${this.sim.silos.siloA.count} un`, 'Padrão Premium');
 
-    // --- 2. FUNIL DE RECEPÇÃO & ALIMENTADOR VIBRATÓRIO ---
+    // 2. FUNIL DE RECEPÇÃO & ALIMENTADOR VIBRATÓRIO
     this.drawHopper(ctx, hopperX, conveyorY - 145, 75, 115, this.sim.hopper.level, this.plc.outputs.c_ALIM);
 
-    // --- 3. ESTEIRA TRANSPORTADORA ---
+    // 3. ESTEIRA TRANSPORTADORA
     this.drawConveyor(ctx, hopperX - 10, conveyorY, endConveyorX - hopperX + 20, conveyorHeight, this.sim.conveyor.actualSpeed, this.sim.conveyor.positionOffset);
 
-    // --- 4. BALANÇA DE PESAGEM CONTÍNUA (WT-301 / FT-301) ---
+    // 4. BALANÇA DE PESAGEM CONTÍNUA (WT-301 / FT-301)
     this.drawScale(ctx, scaleStartX, scaleEndX, conveyorY, this.sim.scale.currentMassOnBeltKg);
 
-    // --- 5. ESTAÇÃO DE VISÃO COMPUTACIONAL (XS-401 / KSA-401) ---
+    // 5. ESTAÇÃO DE VISÃO COMPUTACIONAL (XS-401 / KSA-401)
     this.drawVisionStation(ctx, cameraX, conveyorY, this.plc.inputs.p_KSA401);
 
-    // --- 6. RÉGUA DE TRACKING / SHIFT REGISTER ENTRE CÂMERA E EJETORES ---
+    // 6. RÉGUA DE TRACKING / SHIFT REGISTER ENTRE CÂMERA E EJETORES
     this.drawTrackingRuler(ctx, cameraX, ejectorCX, ejectorBX, conveyorY + conveyorHeight + 15);
 
-    // --- 7. ESTAÇÃO 1: EJETOR PNEUMÁTICO C (FY-603 / ZSH-601) ---
+    // 7. ESTAÇÃO 1: EJETOR PNEUMÁTICO C (FY-603 / ZSH-601)
     this.drawEjectorStation(ctx, ejectorCX, conveyorY, this.sim.pneumatics.pistonStrokeC, this.sim.pneumatics.blowEffectC, this.plc.outputs.c_FY603, 'FY-603 (Ejetor C)', 'ZSH-601', '#ff1744', this.sim.pneumatics.isJammedC);
 
-    // --- 8. ESTAÇÃO 2: EJETOR PNEUMÁTICO B (FY-602 / ZSH-602) ---
+    // 8. ESTAÇÃO 2: EJETOR PNEUMÁTICO B (FY-602 / ZSH-602)
     this.drawEjectorStation(ctx, ejectorBX, conveyorY, this.sim.pneumatics.pistonStrokeB, this.sim.pneumatics.blowEffectB, this.plc.outputs.c_FY602, 'FY-602 (Ejetor B)', 'ZSH-602', '#ffb300', this.sim.pneumatics.isJammedB);
 
-    // --- 9. GRÃOS EM TRÂNSITO ---
+    // 9. GRÃOS EM TRÂNSITO
     this.drawGrains(ctx);
+
+    ctx.restore();
+
+    // --- INDICADOR DE ZOOM ATUAL NO CANTO ---
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(10, h - 22, 115, 16);
+    ctx.strokeStyle = '#1e293b';
+    ctx.strokeRect(10, h - 22, 115, 16);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '8.5px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`ZOOM: ${(this.viewport.zoom * 100).toFixed(0)}% (Scroll / Drag)`, 14, h - 11);
   }
 
   drawProcessStepsHeader(ctx, w) {
@@ -317,38 +486,35 @@ export class SCADASystem {
       { num: '5', title: 'Coleta & Silos', tag: 'Destinos A / B / C', x: 830 },
     ];
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-    ctx.fillRect(10, 8, w - 20, 26);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.fillRect(10, 6, w - 20, 28);
     ctx.strokeStyle = '#1e293b';
-    ctx.strokeRect(10, 8, w - 20, 26);
+    ctx.strokeRect(10, 6, w - 20, 28);
 
     for (let i = 0; i < steps.length; i++) {
       const s = steps[i];
-      // Círculo com número
       ctx.fillStyle = '#0284c7';
       ctx.beginPath();
-      ctx.arc(s.x - 38, 21, 8, 0, Math.PI * 2);
+      ctx.arc(s.x - 38, 20, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(s.num, s.x - 38, 24);
+      ctx.fillText(s.num, s.x - 38, 23);
 
-      // Texto do passo
       ctx.fillStyle = '#e2e8f0';
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(s.title, s.x - 26, 17);
+      ctx.fillText(s.title, s.x - 26, 16);
       ctx.fillStyle = '#38bdf8';
       ctx.font = '8px monospace';
-      ctx.fillText(s.tag, s.x - 26, 27);
+      ctx.fillText(s.tag, s.x - 26, 26);
 
-      // Seta de conexão
       if (i < steps.length - 1) {
         ctx.fillStyle = '#475569';
         ctx.font = '10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('➔', s.x + 85, 22);
+        ctx.fillText('➔', s.x + 85, 21);
       }
     }
   }
@@ -357,7 +523,6 @@ export class SCADASystem {
     const hw = w / 2;
     const chuteW = 20;
 
-    // Estrutura metálica
     ctx.fillStyle = '#1e293b';
     ctx.strokeStyle = '#475569';
     ctx.lineWidth = 2;
@@ -373,7 +538,6 @@ export class SCADASystem {
     ctx.fill();
     ctx.stroke();
 
-    // Nível de Grãos
     if (levelPercent > 0) {
       const fillH = (h - 35) * (levelPercent / 100);
       ctx.save();
@@ -392,12 +556,10 @@ export class SCADASystem {
       ctx.restore();
     }
 
-    // Calha vibratória (Alimentador c_ALIM)
     const vibOffset = isFeeding ? (Math.sin(performance.now() * 0.08) * 2.5) : 0;
     ctx.fillStyle = isFeeding ? '#38bdf8' : '#64748b';
     ctx.fillRect(x - 15 + vibOffset, y + h + 2, 35, 6);
 
-    // Callout / Tag explicativa
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
@@ -414,20 +576,17 @@ export class SCADASystem {
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(x, y + h, len, 8);
 
-    // Pés
     ctx.fillStyle = '#334155';
     for (let px = x + 30; px < x + len; px += 180) {
       ctx.fillRect(px, y + h + 8, 8, 45);
     }
 
-    // Lona
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(x, y, len, h);
     ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(x, y, len, h);
 
-    // Roletes
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.lineWidth = 2;
     for (let rx = x + (offset % 25); rx < x + len; rx += 25) {
@@ -437,14 +596,12 @@ export class SCADASystem {
       ctx.stroke();
     }
 
-    // Tambores
     ctx.fillStyle = '#475569';
     ctx.beginPath();
     ctx.arc(x, y + h / 2, h / 2, 0, Math.PI * 2);
     ctx.arc(x + len, y + h / 2, h / 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Motor da Esteira
     ctx.fillStyle = this.sim.conveyor.isOverloaded ? '#ef4444' : (speed > 0 ? '#10b981' : '#64748b');
     ctx.fillRect(x - 24, y + 2, 20, 26);
     ctx.fillStyle = '#ffffff';
@@ -491,7 +648,6 @@ export class SCADASystem {
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(x - 7, y - 42, 14, 5);
 
-    // Feixe Óptico Laser
     ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
     ctx.beginPath();
     ctx.moveTo(x - 7, y - 37);
@@ -511,7 +667,6 @@ export class SCADASystem {
   }
 
   drawTrackingRuler(ctx, camX, ejCX, ejBX, y) {
-    // Linha de régua de tracking
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
     ctx.lineWidth = 1;
     ctx.setLineDash([2, 3]);
@@ -521,25 +676,15 @@ export class SCADASystem {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Marcador Câmera
     ctx.fillStyle = '#00f0ff';
-    ctx.beginPath();
-    ctx.arc(camX, y, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(camX, y, 3, 0, Math.PI * 2); ctx.fill();
 
-    // Marcador Ejetor C
     ctx.fillStyle = '#ff1744';
-    ctx.beginPath();
-    ctx.arc(ejCX, y, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(ejCX, y, 3, 0, Math.PI * 2); ctx.fill();
 
-    // Marcador Ejetor B
     ctx.fillStyle = '#ffb300';
-    ctx.beginPath();
-    ctx.arc(ejBX, y, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(ejBX, y, 3, 0, Math.PI * 2); ctx.fill();
 
-    // Texto descritivo do Shift Register
     ctx.fillStyle = 'rgba(0, 240, 255, 0.7)';
     ctx.font = '7.5px monospace';
     ctx.textAlign = 'center';
@@ -550,7 +695,6 @@ export class SCADASystem {
     ctx.fillStyle = isJammed ? '#7f1d1d' : '#334155';
     ctx.fillRect(x - 12, y - 75, 24, 35);
 
-    // Linha de Ar
     ctx.strokeStyle = this.plc.inputs.p_PAL601 ? '#ef4444' : '#38bdf8';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -565,7 +709,6 @@ export class SCADASystem {
     ctx.fillStyle = isFiring ? color : '#64748b';
     ctx.fillRect(x - 8, y - 40 + rodLength, 16, 5);
 
-    // Sensor Magnético
     const sensorActive = stroke > 0.85;
     ctx.fillStyle = sensorActive ? '#00e676' : '#475569';
     ctx.fillRect(x + 14, y - 55, 6, 9);
@@ -640,7 +783,6 @@ export class SCADASystem {
   }
 
   updateDashboard() {
-    // 1. Status Geral da Planta
     const plantStatusBadge = document.getElementById('plantStatusBadge');
     if (plantStatusBadge) {
       if (this.plc.inputs.p_EMERG) {
@@ -658,20 +800,17 @@ export class SCADASystem {
       }
     }
 
-    // 2. Displays Instrumentação
     this.updateElementText('dispSpeed', `${this.sim.conveyor.actualSpeed.toFixed(2)} m/s`);
     this.updateElementText('dispSpeedMin', `${(this.sim.conveyor.actualSpeed * 60).toFixed(1)} m/min`);
     this.updateElementText('dispMassFlow', `${this.sim.scale.massFlowKgPerHour.toFixed(1)} kg/h`);
     this.updateElementText('dispPressure', `${this.sim.pneumatics.pressureBar.toFixed(1)} bar`);
     this.updateElementText('dispCurrent', `${this.sim.conveyor.motorCurrent.toFixed(1)} A`);
 
-    // 3. Contadores
     this.updateElementText('cntTotal', this.sim.stats.totalProcessed);
     this.updateElementText('cntCatA', this.sim.stats.catACount);
     this.updateElementText('cntCatB', this.sim.stats.catBCount);
     this.updateElementText('cntCatC', this.sim.stats.catCCount);
 
-    // 4. LEDs Booleanos
     this.updateLed('led_c_PERM', this.plc.outputs.c_PERM);
     this.updateLed('led_c_PERM_sub', this.plc.outputs.c_PERM);
     this.updateLed('led_c_ALIM', this.plc.outputs.c_ALIM);
@@ -690,7 +829,6 @@ export class SCADASystem {
     this.updateLed('led_p_ZSH602', this.plc.inputs.p_ZSH602);
     this.updateLed('led_falha_ejetor', this.plc.diagnostics.p_FALHA_EJETOR, true);
 
-    // 5. Tracking FIFO
     this.renderTrackingQueue();
   }
 

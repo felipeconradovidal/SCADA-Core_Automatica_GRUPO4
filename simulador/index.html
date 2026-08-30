@@ -47,17 +47,34 @@
     <!-- COLUNA ESQUERDA: SINÓTICO E FEED DE VISÃO (8 COLUNAS) -->
     <section class="xl:col-span-8 flex flex-col gap-4">
       
-      <!-- 1. SINÓTICO DA PLANTA INDUSTRIAL COM DIAGRAMA INTEGRADO -->
+      <!-- 1. SINÓTICO DA PLANTA INDUSTRIAL COM CONTROLE DE ZOOM & PAN -->
       <div class="scada-panel p-4 flex flex-col">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+        <div class="flex flex-wrap items-center justify-between pb-2 mb-2 border-b border-slate-800 gap-2">
           <div class="flex items-center space-x-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-            <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Sinótico do Processo (Gêmeo Digital com Cinemática Contínua)</h2>
+            <h2 class="text-xs font-black tracking-wider uppercase text-slate-300">Sinótico Interativo (Zoom & Pan com Câmera Livre)</h2>
           </div>
-          <span class="text-[10px] font-mono text-slate-400">Visualização física das 5 etapas industriais</span>
+          
+          <!-- Barra de Ferramentas de Zoom e Foco Rápido nos Componentes -->
+          <div class="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded border border-slate-800 text-[10px] font-mono">
+            <span class="text-slate-400 px-1 hidden sm:inline">🔍 Foco:</span>
+            <button id="btnPresetAll" class="btn-preset px-2 py-0.5 rounded bg-cyan-900 text-cyan-300 border border-cyan-500 font-bold hover:bg-cyan-800 transition-all">Geral</button>
+            <button id="btnPresetHopper" class="btn-preset px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all">1. Funil</button>
+            <button id="btnPresetScale" class="btn-preset px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all">2. Balança</button>
+            <button id="btnPresetVision" class="btn-preset px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all">3. Câmera</button>
+            <button id="btnPresetEjectors" class="btn-preset px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all">4. Ejetores</button>
+            <button id="btnPresetSilos" class="btn-preset px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all">5. Silos</button>
+            
+            <div class="h-3 w-[1px] bg-slate-700 mx-1"></div>
+            
+            <button id="btnZoomIn" title="Aproximar (+)" class="w-6 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold flex items-center justify-center border border-slate-700 active:scale-95">+</button>
+            <button id="btnZoomOut" title="Afastar (-)" class="w-6 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold flex items-center justify-center border border-slate-700 active:scale-95">-</button>
+            <button id="btnZoomReset" title="Resetar Zoom" class="px-1.5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold flex items-center justify-center border border-slate-700 active:scale-95">⟲</button>
+          </div>
         </div>
 
-        <div class="relative w-full overflow-x-auto rounded-lg bg-[#0b1320] border border-slate-800/80 flex items-center justify-center p-1">
+        <!-- Canvas do Sinótico com Zoom & Pan -->
+        <div class="relative w-full overflow-hidden rounded-lg bg-[#0b1320] border border-slate-800/80 flex items-center justify-center p-0 select-none">
           <canvas id="synopticCanvas" class="w-full max-w-[960px] h-auto"></canvas>
         </div>
 
