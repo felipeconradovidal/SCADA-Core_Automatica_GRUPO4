@@ -162,27 +162,38 @@ p_A ∨ p_B ∨ p_C  ≡  Verdadeiro          (exaustividade, por definição de
 
 # 6. Sistema de Ejeção Pneumática
 
-## 6.1 Comando de Disparo (`c_FY603`)
+A planta industrial opera com dois atuadores de desvio independentes posicionados em série ao longo da esteira transportadora:
 
-O ejetor deve atuar apenas quando o grão rejeitado atinge fisicamente a posição do bocal (calculada via *shift register* a partir da velocidade do encoder) **e** houver pressão suficiente:
+## 6.1 Comando de Disparo do Ejetor da Categoria B (`c_FY602`)
+
+O primeiro bocal ejetor desvia os grãos classificados como Categoria B quando estes atingem a posição física do bocal 2 (`p_POS602`) sob pressão nominal:
+
+```
+c_FY602 ↔ ( p_B ∧ p_POS602 ∧ ¬p_PAL601 )
+```
+
+**Leitura:** a válvula `FY-602` é acionada **se e somente se** o grão for Categoria B **E** estiver alinhado ao bocal B (`p_POS602`) **E** a pressão pneumática for suficiente (`¬p_PAL601`).
+
+## 6.2 Comando de Disparo do Ejetor da Categoria C (`c_FY603`)
+
+O segundo bocal atua na ejeção dos grãos descartados (Categoria C) ao atingirem o bocal 3 (`p_POS603`):
 
 ```
 c_FY603 ↔ ( p_C ∧ p_POS603 ∧ ¬p_PAL601 )
 ```
 
-Onde `p_POS603` é a proposição — gerada pelo temporizador/*shift register* do CLP — que indica "grão rejeitado está na posição do ejetor agora". Essa variável ainda não tem tag própria no catálogo; sugiro criarmos algo como `ZC-603` (posição calculada) na próxima revisão da tabela.
+**Leitura:** a válvula `FY-603` é acionada **se e somente se** o grão for Categoria C **E** estiver alinhado ao bocal C (`p_POS603`) **E** não houver alarme de pressão baixa (`¬p_PAL601`).
 
-**Leitura:** a válvula é acionada **se e somente se** o grão à frente do bocal for Categoria C **E** ele estiver na posição correta **E** não houver alarme de pressão baixa.
+## 6.3 Diagnóstico de Falha dos Atuadores
 
-## 6.2 Diagnóstico de Falha do Atuador
-
-A confirmação física do avanço do cilindro (`ZSH-601`) deve ocorrer dentro de uma janela de tempo `T` após o comando. Se isso não acontecer, é uma falha de acionamento:
+A confirmação física do avanço mecânico de cada atuador (`ZSH-602` e `ZSH-601`) deve ocorrer dentro de uma janela limite de tempo $T$ após o respectivo pulso de comando. Caso contrário, diagnostica-se falha mecânica/elétrica de atuação:
 
 ```
-p_FALHA_EJETOR ↔ ( c_FY603 ∧ ¬p_ZSH601 )   [avaliado após o tempo T de espera]
+p_FALHA_EJETOR_B ↔ ( c_FY602 ∧ ¬p_ZSH602 )   [avaliado após tempo limite T]
+p_FALHA_EJETOR_C ↔ ( c_FY603 ∧ ¬p_ZSH601 )   [avaliado após tempo limite T]
 ```
 
-**Leitura:** há falha de ejeção **se e somente se** o comando foi enviado **E**, decorrido o tempo `T`, o sensor magnético não confirmou o avanço do atuador.
+**Leitura:** há falha de ejeção em uma estação **se e somente se** o comando foi emitido **E**, decorrido o tempo $T$, o respectivo sensor magnético de curso não confirmou o deslocamento do atuador.
 
 ---
 
@@ -190,40 +201,42 @@ p_FALHA_EJETOR ↔ ( c_FY603 ∧ ¬p_ZSH601 )   [avaliado após o tempo T de esp
 
 | Alarme | Expressão | Leitura |
 | :--- | :--- | :--- |
-| Sobrecarga do motor | `Alarme_JI201 ↔ p_JI201` | Dispara quando o relé de sobrecarga muda para 1 |
-| Pressão pneumática baixa | `Alarme_PAL601 ↔ p_PAL601` | Dispara quando a pressão cai abaixo do mínimo |
-| Reservatório de rejeito cheio | `Alarme_LIT703 ↔ p_NA703` | Alerta visual/sonoro ao atingir ~90% |
-| Bloqueio por rejeito crítico | `Bloqueio_LIT703 ↔ p_NC703` | Interrompe a alimentação (`c_ALIM → 0`, via `c_PERM`) ao atingir 100% |
-| Falha de ejeção | `Alarme_EJETOR ↔ p_FALHA_EJETOR` | Ver seção 6.2 |
+| Sobrecarga do motor | `Alarme_JI201 ↔ p_JI201` | Dispara quando o relé térmico de sobrecarga muda para 1 |
+| Pressão pneumática baixa | `Alarme_PAL601 ↔ p_PAL601` | Dispara quando a pressão de ar comprimido cai abaixo de 6 bar |
+| Silo secundário cheio | `Alarme_LIT702 ↔ p_NA702` | Alerta visual/sonoro ao atingir nível alto (~80-90%) no silo B |
+| Bloqueio por silo B crítico | `Bloqueio_LIT702 ↔ p_NC702` | Interrompe a alimentação (`c_ALIM → 0`, via `c_PERM`) ao atingir nível crítico |
+| Reservatório de rejeito cheio | `Alarme_LIT703 ↔ p_NA703` | Alerta visual/sonoro ao atingir nível alto (~80-90%) no silo C |
+| Bloqueio por rejeito crítico | `Bloqueio_LIT703 ↔ p_NC703` | Interrompe a alimentação (`c_ALIM → 0`, via `c_PERM`) ao atingir nível crítico |
+| Falha no ejetor B | `Alarme_EJETOR_B ↔ p_FALHA_EJETOR_B` | Ver seção 6.3 |
+| Falha no ejetor C | `Alarme_EJETOR_C ↔ p_FALHA_EJETOR_C` | Ver seção 6.3 |
 
-Note que o bloqueio por reservatório cheio se propaga naturalmente pela cadeia lógica já definida se incorporarmos `¬p_NC703` à Permissão Geral:
+A proteção contra transbordo de qualquer um dos recipientes de coleta se propaga pela cadeia lógica consolidada de Permissão Geral:
 
 ```
-c_PERM ↔ ( ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC703 )
+c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC702 ∧ ¬p_NC703 )
 ```
-
-Isso é consistente com o texto do descritivo ("o CLP interrompe preventivamente a alimentação do processo") e evita criar uma segunda lógica de bloqueio paralela ao intertravamento principal — sugiro adotarmos essa versão consolidada de `c_PERM` daqui para frente (substitui a da Seção 3).
 
 ---
 
 # 8. Consolidação — Cadeia Lógica Completa
 
 ```
-c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
+c_PERM   ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC702 ∧ ¬p_NC703 )
 c_ALIM   ↔ c_PERM ∧ p_MOV201 ∧ ¬p_NB101
 
 p_A      ↔ p_CV101 ∧ p_CV103 ∧ p_CV105 ∧ ¬p_CV107 ∧ ¬p_CV108 ∧ ¬p_CV109
-p_C      ↔ p_CV107 ∨ p_CV108 ∨ p_CV109 ∨ (¬p_CV101∧¬p_CV102) ∨ (¬p_CV103∧¬p_CV104) ∨ (¬p_CV105∧¬p_CV106)
+p_C      ↔ p_CV107 ∨ p_CV108 ∨ p_CV109 ∨ (¬p_CV101 ∧ ¬p_CV102) ∨ (¬p_CV103 ∧ ¬p_CV104) ∨ (¬p_CV105 ∧ ¬p_CV106)
 p_B      ↔ ¬p_A ∧ ¬p_C
 
+c_FY602  ↔ p_B ∧ p_POS602 ∧ ¬p_PAL601
 c_FY603  ↔ p_C ∧ p_POS603 ∧ ¬p_PAL601
 ```
 
-Essa cadeia cobre, em lógica proposicional pura, todo o fluxo descrito no README (recepção → alimentação → transporte → inspeção → classificação → ejeção → monitoramento), servindo de base direta para:
+Essa cadeia cobre, em lógica proposicional formal, todo o fluxo industrial da planta (alimentação → tração → inspeção → classificação tripla → ejeção com 2 atuadores independentes → monitoramento), servindo de base direta para:
 
-- **Diagrama Ladder / lista de instruções** no CLP (cada `∧`, `∨`, `¬` mapeia 1:1 para contatos NA/NF e bobinas);
-- **Tabelas-verdade de validação** antes da implementação;
-- Próxima aula: acredito que faça sentido evoluirmos isso para **álgebra booleana com simplificação (mapas de Karnaugh)** assim que fecharmos os setpoints analógicos da Seção 2, e depois para os diagramas de intertravamento formais.
+- **Diagrama Ladder / Lista de Instruções (IL)** no CLP;
+- **Tabelas-verdade de validação e testes formais**;
+- Análise de tautologias, sistemas especialistas e tolerância a falhas.
 
 ---
 

@@ -193,26 +193,30 @@ Para consolidar as especificações das Aulas 00 a 08 da planta de seleção de 
 | `p_EMERG` | XA-901 | Digital | Botoeira de parada de emergência física acionada |
 | `p_JI201` | JI-201 | Digital | Relé térmico de sobrecarga no motor elétrico da esteira atuado |
 | `p_PAL601` | PAL-601 | Digital | Pressão da linha pneumática principal abaixo do limite mínimo (< 6 bar) |
-| `p_NC703` | LIT-703 | Digital | Nível crítico (100% - risco de transbordo) no silo de descarte (Cat. C) |
+| `p_NC702` | LIT-702 | Digital | Nível crítico (90%+ - risco de transbordo) no silo secundário (Cat. B) |
+| `p_NC703` | LIT-703 | Digital | Nível crítico (90%+ - risco de transbordo) no silo de descarte (Cat. C) |
 | `p_KSA401` | KSA-401 | Digital | Câmera industrial de inspeção e software de visão operacionais (Heartbeat OK) |
 | `p_MOV201` | ST-201 | Digital | Esteira transportadora em movimento mecânico efetivo |
 | `p_NB101` | LIT-101 | Digital | Nível baixo de matéria-prima no funil de recepção |
 | `p_XS401` | XS-401 | Digital | Sensor óptico de barreira (Trigger de presença de grão sob a câmera) |
-| `p_POS603` | Algoritmo | Digital | Grão rastreado alcançou a posição frontal do bico ejetor FY-603 |
-| `p_ZSH601` | ZSH-601 | Digital | Sensor magnético de fim de curso confirma avanço físico do carretel da solenoide |
+| `p_POS602` | Algoritmo | Digital | Grão rastreado alcançou a posição frontal do bico ejetor secundário FY-602 |
+| `p_ZSH602` | ZSH-602 | Digital | Sensor magnético de fim de curso confirma avanço físico do carretel da solenoide B |
+| `p_POS603` | Algoritmo | Digital | Grão rastreado alcançou a posição frontal do bico ejetor de rejeito FY-603 |
+| `p_ZSH601` | ZSH-601 | Digital | Sensor magnético de fim de curso confirma avanço físico do carretel da solenoide C |
 | `p_A` | KXA-501 | Digital | Grão inspecionado classificado como Categoria A (Padrão Ideal) |
 | `p_B` | KXA-502 | Digital | Grão inspecionado classificado como Categoria B (Secundário/Aproveitável) |
 | `p_C` | KXA-503 | Digital | Grão inspecionado classificado como Categoria C (Rejeito por dano, praga ou mancha) |
 | `c_PERM` | CLP | Digital | Permissivo geral de operação segura da planta |
 | `c_ALIM` | CLP | Digital | Comando de habilitação do alimentador vibratório de entrada |
 | `c_ESTEIRA` | CLP | Digital | Comando de partida do inversor de frequência do motor da esteira |
-| `c_FY603` | CLP | Digital | Pulso elétrico de acionamento da válvula solenoide de ejeção rápida |
+| `c_FY602` | CLP | Digital | Pulso elétrico de acionamento da válvula solenoide secundária FY-602 |
+| `c_FY603` | CLP | Digital | Pulso elétrico de acionamento da válvula solenoide de descarte FY-603 |
 
 ---
 
 ## 3.2. Catálogo de Regras de Produção da Base de Conhecimento ($\mathcal{R}$)
 
-A base $\mathcal{R} = \{\mathcal{R}_{01}, \mathcal{R}_{02}, \dots, \mathcal{R}_{12}\}$ modela a física e o diagnóstico inteligente da planta:
+A base $\mathcal{R}$ modela a física e o diagnóstico inteligente da planta:
 
 $$\begin{aligned}
 \mathcal{R}_{01} &: (c_{\text{ALIM}} \land p_{\text{MOV201}} \land \neg p_{\text{NB101}} \land \text{VazaoNula}) \implies \text{CausaRaiz}(\text{Obstrução Mecânica no Bocal do Funil}) \\
@@ -225,14 +229,16 @@ $$\begin{aligned}
 \mathcal{R}_{08} &: (\text{TaxaRejeicaoAlta}) \implies \text{Diagnostico}(\text{Matéria-Prima com Alto Índice de Contaminação/Pragas}) \\
 \mathcal{R}_{09} &: (p_{\text{KSA401}} \land p_{\text{XS401}} \land \text{RejeicaoAnomalaConsecutiva}) \implies \text{CausaRaiz}(\text{Lente Obstruída por Poeira ou Falha na Iluminação LED}) \\
 \mathcal{R}_{10} &: (p_{\text{PAL601}}) \implies \text{CausaRaiz}(\text{Queda Crítica de Pressão no Suprimento Pneumático Principal}) \\
-\mathcal{R}_{11} &: (c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}) \implies \text{CausaRaiz}(\text{Queima da Bobina Solenoide FY-603 ou Travamento Mecânico do Carretel}) \\
-\mathcal{R}_{12} &: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{Silo de Rejeito Categoria C Saturado (100\%) - Risco de Transbordo})
+\mathcal{R}_{11A} &: (c_{\text{FY602}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH602}}) \implies \text{CausaRaiz}(\text{Queima da Bobina Solenoide FY-602 ou Travamento Mecânico do Carretel B}) \\
+\mathcal{R}_{11B} &: (c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}) \implies \text{CausaRaiz}(\text{Queima da Bobina Solenoide FY-603 ou Travamento Mecânico do Carretel C}) \\
+\mathcal{R}_{12A} &: (p_{\text{NC702}}) \implies \text{CausaRaiz}(\text{Silo Secundário Categoria B Saturado - Risco de Transbordo}) \\
+\mathcal{R}_{12B} &: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{Silo de Rejeito Categoria C Saturado - Risco de Transbordo})
 \end{aligned}$$
 
 Regras de Intertravamento e Ação Automática derivadas da matriz de segurança (Aula 07):
 $$\begin{aligned}
-\mathcal{R}_{\text{PERM}} &: (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}) \implies c_{\text{PERM}} \\
-\mathcal{R}_{\text{TRIP\_GERAL}} &: (p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}) \implies \text{TripGeral} \\
+\mathcal{R}_{\text{PERM}} &: (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}) \implies c_{\text{PERM}} \\
+\mathcal{R}_{\text{TRIP\_GERAL}} &: (p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{BLOQUEIO\_ALIM}} &: (\text{TripGeral} \lor \neg p_{\text{MOV201}} \lor p_{\text{NB101}}) \implies \text{BloqueiaAlimentador}
 \end{aligned}$$
 
@@ -643,24 +649,44 @@ def build_scada_core_knowledge_base() -> InferenceEngine:
         action_prescribed="Verificar compressor central, dreno de condensado e vazamentos na tubulação."
     ))
 
-    # R11: Falha elétrica ou mecânica na solenoide ejetora FY-603
+    # R11A: Falha elétrica ou mecânica na solenoide ejetora secundária FY-602
+    engine.add_rule(Rule(
+        rule_id="R11A",
+        antecedent=[("c_FY602", True), ("p_PAL601", False), ("p_ZSH602", False)],
+        consequent=("causa_falha_solenoide_fy602", True),
+        description="Válvula solenoide FY-602 não atuou fisicamente apesar do comando elétrico ativo",
+        severity=Severidade.CRITICA,
+        action_prescribed="Testar tensão 24V na bobina da solenoide B e trocar válvula rápida FY-602."
+    ))
+
+    # R11B: Falha elétrica ou mecânica na solenoide ejetora de rejeito FY-603
     engine.add_rule(Rule(
         rule_id="R11",
         antecedent=[("c_FY603", True), ("p_PAL601", False), ("p_ZSH601", False)],
         consequent=("causa_falha_solenoide_fy603", True),
         description="Válvula solenoide FY-603 não atuou fisicamente apesar do comando elétrico ativo",
         severity=Severidade.CRITICA,
-        action_prescribed="Testar tensão 24V na bobina da solenoide e trocar válvula rápida."
+        action_prescribed="Testar tensão 24V na bobina da solenoide C e trocar válvula rápida FY-603."
     ))
 
-    # R12: Silo de rejeitos categoria C em capacidade crítica
+    # R12A: Silo secundário categoria B em capacidade crítica
+    engine.add_rule(Rule(
+        rule_id="R12A",
+        antecedent=[("p_NC702", True)],
+        consequent=("causa_silo_secundario_cheio", True),
+        description="Silo secundário B atingiu nível crítico (90%+) com risco de transbordo",
+        severity=Severidade.ALTA,
+        action_prescribed="Substituir/esvaziar caçamba de produto secundário B e resetar permissivo."
+    ))
+
+    # R12B: Silo de rejeitos categoria C em capacidade crítica
     engine.add_rule(Rule(
         rule_id="R12",
         antecedent=[("p_NC703", True)],
         consequent=("causa_silo_rejeito_cheio", True),
-        description="Silo de descarte atingiu nível de 100% com risco iminente de transbordo",
+        description="Silo de descarte C atingiu nível de 100% com risco iminente de transbordo",
         severity=Severidade.ALTA,
-        action_prescribed="Substituir caçamba de rejeito e resetar permissivo na IHM."
+        action_prescribed="Substituir caçamba de rejeito C e resetar permissivo na IHM."
     ))
 
     # Regras de Intertravamento Geral e Trip (Matriz de Causa e Efeito da Aula 07)
@@ -683,12 +709,21 @@ def build_scada_core_knowledge_base() -> InferenceEngine:
     ))
 
     engine.add_rule(Rule(
+        rule_id="R_TRIP_SILO_B",
+        antecedent=[("causa_silo_secundario_cheio", True)],
+        consequent=("trip_geral", True),
+        description="Trip por sobreenchimento do silo secundário B",
+        severity=Severidade.CRITICA,
+        action_prescribed="Parar alimentação até descarte do reservatório B."
+    ))
+
+    engine.add_rule(Rule(
         rule_id="R_TRIP_SILO",
         antecedent=[("causa_silo_rejeito_cheio", True)],
         consequent=("trip_geral", True),
-        description="Trip por sobreenchimento do silo de refugo",
+        description="Trip por sobreenchimento do silo de refugo C",
         severity=Severidade.CRITICA,
-        action_prescribed="Parar alimentação até descarte do reservatório."
+        action_prescribed="Parar alimentação até descarte do reservatório C."
     ))
 
     engine.add_rule(Rule(

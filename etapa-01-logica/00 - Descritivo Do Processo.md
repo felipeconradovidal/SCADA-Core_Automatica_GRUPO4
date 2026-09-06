@@ -81,13 +81,16 @@ Assim que a decisão lógica é tomada, o registro da classificação do grão e
 
 ## 7. Sistema Pneumático e Ejeção
 
-O sistema pneumático é o atuador físico responsável por desviar mecanicamente os grãos para fora da esteira com base no resultado da classificação obtido na etapa anterior. Como o processo ocorre em alta velocidade, o sistema exige pressão de ar adequada e tempos de resposta na ordem de milissegundos.
+O sistema pneumático é o subsistema de atuação física responsável por desviar mecanicamente os grãos para fora da esteira com base no resultado da classificação gerado na etapa anterior. Como o processo ocorre em alta velocidade (na ordem de 1 a 2 m/s), o sistema exige pressão de ar rigorosamente estável e tempos de resposta de solenoides na ordem de milissegundos.
 
-A linha principal de suprimento de ar comprimido é monitorada pelo transmissor de pressão piezoelétrico **PT-601**, que fornece o valor contínuo da pressão do sistema. O correto funcionamento da ejeção depende intrinsecamente do nível de pressão. Se o ar comprimido cair abaixo do limite necessário para vencer a inércia dos grãos, a força do sopro pneumático será insuficiente, gerando falhas na separação física. Para proteger a planta contra essa condição, atua a variável **PAL-601** (Pressostato digital / Alarme de Pressão Baixa), que muda para o estado 1 se a pressão for insuficiente para a operação segura dos atuadores.
+A linha principal de suprimento de ar comprimido é monitorada pelo transmissor piezoelétrico **PT-601**, que fornece o valor contínuo da pressão do sistema. O correto funcionamento dos jatos de sopro depende intrinsecamente do nível de pressão. Se o ar comprimido cair abaixo do limite necessário para vencer a inércia dos grãos, a força do sopro pneumático será insuficiente, gerando falhas na separação física e contaminação de lotes. Para proteger a planta contra essa condição, atua a variável **PAL-601** (Pressostato digital / Alarme de Pressão Baixa), que muda para o estado 1 se a pressão for insuficiente para a operação segura dos atuadores, inibindo imediatamente qualquer comando de disparo.
 
-Quando um grão classificado como Categoria C (**KXA-503** = 1) atinge a posição exata do bocal de desvio na esteira (calculada pelo tempo de trânsito), o PLC aciona o comando da válvula solenoide ultrarrápida **FY-603**. A abertura energizada da válvula libera um jato de ar comprimido de curta duração que ejeta o grão descartado para fora da esteira.
+A planta conta com **duas estações de ejeção pneumática sequenciais**:
 
-Para garantir que a ação física de ejeção realmente ocorreu e não houve falha elétrica na bobina da solenoide ou travamento mecânico da válvula/cilindro, o sistema conta com a confirmação dada pelo sensor magnético de posição **ZSH-601** (confirmação física de avanço do atuador). A leitura do **ZSH-601** permite ao CLP verificar se o atuador respondeu ao comando no tempo esperado, fornecendo o diagnóstico de falha de acionamento em tempo real.
+1. **Estação de Ejeção B (Válvula FY-602):** Quando um grão classificado como Categoria B (**KXA-502** = 1) atinge a primeira posição de desvio (`p_POS602`), o CLP aciona a válvula solenoide ultrarrápida **FY-602**. O jato de ar desvia o grão secundário para a calha do recipiente B. O sensor magnético de cilindro **ZSH-602** confirma o avanço físico do bocal, diagnosticando falhas de acionamento em tempo real.
+2. **Estação de Ejeção C (Válvula FY-603):** Quando um grão classificado como Categoria C (**KXA-503** = 1) atinge a segunda posição de desvio (`p_POS603`), o CLP aciona a válvula solenoide ultrarrápida **FY-603**. O jato de ar ejeta o grão defeituoso para a calha de rejeito. O sensor magnético de cilindro **ZSH-601** fornece a confirmação física de avanço correspondente.
+
+Essa separação em dois bocais dedicados garante que cada categoria seja segregada sem risco de contaminação cruzada.
 
 ---
 
@@ -95,12 +98,15 @@ Para garantir que a ação física de ejeção realmente ocorreu e não houve fa
 
 Após a etapa de ejeção, os grãos devidamente separados seguem para os seus respectivos reservatórios de destino final:
 
-* Grãos ejetados pela ação do sopro pneumático são direcionados à calha e recipiente de **Rejeito (Categoria C)**.
-* Grãos aprovados permanecem sobre a esteira e são depositados ao final do percurso no recipiente correspondente (**Categoria A**).
+* Grãos de qualidade intermediária, desviados pelo primeiro bocal (**FY-602**), são direcionados ao reservatório de **Produto Secundário (Categoria B)**.
+* Grãos descartados, ejetados pelo segundo bocal (**FY-603**), são direcionados à calha e reservatório de **Rejeito (Categoria C)**.
+* Grãos aprovados permanecem sobre a esteira e são depositados por gravidade ao final do percurso no reservatório principal (**Categoria A**).
 
-O recipiente de recepção de rejeito exige monitoramento contínuo para prevenir o extravasamento de produto descartado sobre o chão de fábrica. Esse acompanhamento é realizado pelo sensor de nível ultrassônico **LIT-703**, instalado no topo do reservatório de Categoria C.
+Ambos os recipientes de desvio exigem monitoramento contínuo para prevenir extravasamento e sobreenchimento sobre a área de processo:
+* O reservatório de Categoria B é monitorado pelo transmissor ultrassônico **LIT-702** (gerando alerta de nível alto **p_NA702** e bloqueio crítico **p_NC702**).
+* O reservatório de Categoria C é monitorado pelo transmissor ultrassônico **LIT-703** (gerando alerta de nível alto **p_NA703** e bloqueio crítico **p_NC703**).
 
-À medida que o recipiente é preenchido, o valor medido pelo **LIT-703** cresce continuamente de 0 a 100%. Quando a capacidade máxima operacional é atingida, o SCADA gera um alarme visual e sonoro de recipiente cheio. Essa indicação orienta a equipe de operação sobre a necessidade de substituição ou esvaziamento do reservatório. Caso o operador não realize a troca em tempo hábil e o nível atinja a condição crítica, o CLP interrompe preventivamente a alimentação do processo para evitar o acúmulo desordenado de rejeito na área de desvio.
+À medida que os recipientes são preenchidos, os valores medidos crescem de 0 a 100%. Ao atingirem 80-90%, o SCADA emite avisos ao operador para preparação da troca de caçambas. Caso a capacidade máxima (95-100%) seja atingida sem substituição, o CLP desarma preventivamente a alimentação vibratória (`c_ALIM = 0`) através do intertravamento geral (`c_PERM`), interrompendo o fluxo de produto antes de qualquer transbordo.
 
 ---
 
@@ -110,10 +116,10 @@ O sistema de supervisão e aquisição de dados (SCADA) atua como o ambiente cen
 
 Através do SCADA, o operador monitora em tempo real:
 
-* **Estado Geral da Planta:** por meio da variável **Permissão Geral de Operação (Intertravamento do CLP)**, que indica se as condições de segurança (emergência, pressão de ar **PAL-601**, motor da esteira **JI-201** e visão **KSA-401**) estão satisfeitas para permitir a partida do processo (Estado 1).
-* **Fluxo de Processamento:** visualização gráfica do nível do funil (**LIT-101**), velocidade da esteira (**ST-201**), massa instantânea na balança (**WT-301**) e a taxa de vazão mássica em tempo real (**FT-301**).
-* **Diagnóstico e Alarmes:** exibição em painel de eventos de falhas elétricas por sobrecarga no motor (**JI-201** = 1), baixa pressão na linha pneumática (**PAL-601** = 1) e necessidade de intervenção na coleta pelo nível elevado no reservatório de rejeito (**LIT-703**).
-* **Métricas de Produtividade e Qualidade:** apresentação da variável calculada **Taxa de Rejeição Total (SCADA)**, que correlaciona continuamente os grãos computados como rejeito (**KXA-503**) frente ao volume total processado. Esse indicador permite acompanhar desvios de qualidade do lote recebido na recepção.
+* **Estado Geral da Planta:** por meio da variável **Permissão Geral de Operação (Intertravamento do CLP)**, que indica se as condições de segurança (emergência, pressão de ar **PAL-601**, motor da esteira **JI-201**, visão **KSA-401** e níveis dos silos **NC702/NC703**) estão satisfeitas para permitir a operação da planta (Estado 1).
+* **Fluxo de Processamento:** visualização gráfica do nível do funil (**LIT-101**), velocidade da esteira (**ST-201**), massa instantânea na balança (**WT-301**) e taxa de vazão mássica em tempo real (**FT-301**).
+* **Diagnóstico e Alarmes:** exibição em painel de eventos de falhas elétricas por sobrecarga no motor (**JI-201** = 1), baixa pressão na linha pneumática (**PAL-601** = 1), falhas nos atuadores ejetores (**FY-602** / **FY-603**) e necessidade de intervenção nos recipientes (**LIT-702** / **LIT-703**).
+* **Métricas de Produtividade e Qualidade:** apresentação da variável calculada **Taxa de Rejeição Total (SCADA)** e rendimento por categoria (Aprovado, Secundário e Rejeitado), possibilitando acompanhamento contínuo dos lotes de matéria-prima.
 
 O SCADA armazena o histórico contínuo das variáveis em banco de dados, possibilitando a geração de relatórios de produção, gráficos de tendência e rastreabilidade da operação do sistema.
 
@@ -125,7 +131,7 @@ O funcionamento integrado da planta automatizada segue uma sequência encadeada 
 
 1. **Abastecimento Inicial:** Os grãos chegam à planta e são despejados no funil de recepção. O transmissor **LIT-101** registra o nível de produto armazenado.
 
-2. **Verificação de Permissões:** O operador solicita a partida da planta via SCADA. O CLP valida a **Permissão Geral de Operação (Intertravamento)**, verificando se não há emergências ativas, se o motor da esteira está íntegro (**JI-201** = 0), se a pressão de ar está normal (**PAL-601** = 0) e se a câmera está operacional (**KSA-401** = 1).
+2. **Verificação de Permissões:** O operador solicita a partida da planta via SCADA. O CLP valida a **Permissão Geral de Operação (Intertravamento)**, verificando se não há emergências ativas, se o motor da esteira está íntegro (**JI-201** = 0), se a pressão de ar está normal (**PAL-601** = 0), se a câmera está operacional (**KSA-401** = 1) e se nenhum silo de coleta está saturado (**p_NC702** = 0 e **p_NC703** = 0).
 
 3. **Partida do Transporte e Alimentação:** A esteira transportadora é acionada, e sua velocidade real é monitorada continuamente pelo encoder **ST-201**. Em seguida, o **Comando do Alimentador Vibratório** é ativado, iniciando a dosagem controlada e contínua dos grãos sobre a esteira em movimento.
 
@@ -133,13 +139,15 @@ O funcionamento integrado da planta automatizada segue uma sequência encadeada 
 
 5. **Detecção e Disparo da Inspeção:** Ao entrarem na estação de visão, a passagem de cada grão é detectada pelo sensor fotoelétrico **XS-401**. O disparo instantâneo aciona a captura da imagem pela câmera industrial.
 
-6. **Processamento da Imagem e Classificação:** O algoritmo de visão analisa a imagem capturada e toma a decisão lógica de qualidade: se o grão for aprovado, ativa **KXA-501**; se for identificado defeito, ativa **KXA-503**.
+6. **Processamento da Imagem e Classificação:** O algoritmo de visão analisa a imagem capturada e toma a decisão lógica de qualidade: se aprovado ativa **KXA-501**; se secundário ativa **KXA-502**; se rejeitado ativa **KXA-503**.
 
-7. **Rastreamento e Ejeção Pneumática:** A decisão de classificação entra no registrador de deslocamento do CLP. O sistema acompanha a posição física do grão com base na velocidade fornecida pelo encoder **ST-201**. Ao atingir o ponto de ejeção, se a decisão for de rejeição (**KXA-503** = 1), o CLP aciona a válvula solenoide **FY-603**. O jacto de ar comprimido ejeta o grão defeituoso, enquanto a chave **ZSH-601** confirma a atuação física do cilindro.
+7. **Rastreamento e Ejeção Pneumática:** A decisão de classificação entra no registrador de deslocamento do CLP sincronizado com o encoder **ST-201**:
+   * Na posição do bocal B (`p_POS602`), se **KXA-502** = 1 e ar OK, o CLP aciona a válvula **FY-602** e o sensor **ZSH-602** confirma o avanço.
+   * Na posição do bocal C (`p_POS603`), se **KXA-503** = 1 e ar OK, o CLP aciona a válvula **FY-603** e o sensor **ZSH-601** confirma o avanço.
 
-8. **Coleta e Monitoramento de Silos:** Os grãos ejetados caem no reservatório de rejeito (Categoria C), cujo volume é monitorado em tempo real pelo sensor de nível **LIT-703**. Os grãos aprovados seguem na esteira e descarregam no reservatório final (Categoria A).
+8. **Coleta e Monitoramento de Silos:** Os grãos secundários são recolhidos no recipiente B (**LIT-702**), os grãos rejeitados caem no recipiente C (**LIT-703**), e os grãos de qualidade nobre A permanecem na esteira até descarregarem no silo principal.
 
-9. **Supervisão Contínua:** Durante todo o percurso, o SCADA atualiza as variáveis do sinóptico e processa a **Taxa de Rejeição Total (SCADA)**, garantindo controle, diagnóstico e rastreabilidade total do processo de seleção de grãos.
+9. **Supervisão Contínua:** Durante todo o percurso, o SCADA atualiza as variáveis do sinóptico e processa as taxas de rendimento e descarte, garantindo controle, diagnóstico e rastreabilidade total do processo.
 
 ---
 

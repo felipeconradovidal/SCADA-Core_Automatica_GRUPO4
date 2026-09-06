@@ -58,16 +58,18 @@ Para provar que uma propriedade de segurança $S$ é sempre satisfeita dadas as 
 
 A matriz a seguir mapeia as causas físicas (eventos de processo e falhas) e seus respectivos efeitos imediatos nos atuadores e permissivos:
 
-| ID | Causa (Entrada do Processo / Alarme) | Condição Lógica | Efeito no $c_{\text{PERM}}$ | Efeito no Alimentador ($c_{\text{ALIM}}$) | Efeito no Ejetor ($c_{\text{FY603}}$) | Severidade / Ação |
+| ID | Causa (Entrada do Processo / Alarme) | Condição Lógica | Efeito no $c_{\text{PERM}}$ | Efeito no Alimentador ($c_{\text{ALIM}}$) | Efeito nos Ejetores ($c_{\text{FY602}}, c_{\text{FY603}}$) | Severidade / Ação |
 | :---: | :--- | :--- | :---: | :---: | :---: | :--- |
-| **C01** | Botoeira de Emergência Acionada | $p_{\text{EMERG}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | $0$ (Inibe) | **Crítica (Trip Geral)** |
-| **C02** | Sobrecarga no Motor da Esteira | $p_{\text{JI201}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | $0$ (Inibe) | **Crítica (Proteção Elétrica)** |
-| **C03** | Pressão Pneumática Baixa | $p_{\text{PAL601}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | $0$ (Inibe) | **Alta (Evita Ejeção Cega)** |
-| **C04** | Nível Crítico no Reservatório C | $p_{\text{NC703}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | $0$ (Inibe) | **Alta (Anti-Transbordo)** |
-| **C05** | Câmera Industrial Desconectada | $p_{\text{KSA401}} = 0$ | $0$ (Bloqueia) | $0$ (Desliga) | $0$ (Inibe) | **Alta (Anti-Mistura)** |
-| **C06** | Esteira Desligada / Parada | $p_{\text{MOV201}} = 0$ | $1$ (Mantém) | $0$ (Desliga) | $0$ (Sem grão na pos.) | **Operacional (Anti-Acúmulo)** |
+| **C01** | Botoeira de Emergência Acionada | $p_{\text{EMERG}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | Ambos $0$ (Inibe) | **Crítica (Trip Geral)** |
+| **C02** | Sobrecarga no Motor da Esteira | $p_{\text{JI201}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | Ambos $0$ (Inibe) | **Crítica (Proteção Elétrica)** |
+| **C03** | Pressão Pneumática Baixa | $p_{\text{PAL601}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | Ambos $0$ (Inibe) | **Alta (Evita Ejeção Cega)** |
+| **C04A**| Nível Crítico no Silo Secundário B | $p_{\text{NC702}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | Ambos $0$ (Inibe) | **Alta (Anti-Transbordo B)** |
+| **C04B**| Nível Crítico no Silo de Rejeito C | $p_{\text{NC703}} = 1$ | $0$ (Bloqueia) | $0$ (Desliga) | Ambos $0$ (Inibe) | **Alta (Anti-Transbordo C)** |
+| **C05** | Câmera Industrial Desconectada | $p_{\text{KSA401}} = 0$ | $0$ (Bloqueia) | $0$ (Desliga) | Ambos $0$ (Inibe) | **Alta (Anti-Mistura)** |
+| **C06** | Esteira Desligada / Parada | $p_{\text{MOV201}} = 0$ | $1$ (Mantém) | $0$ (Desliga) | $0$ (Sem avanço) | **Operacional (Anti-Acúmulo)** |
 | **C07** | Nível Baixo no Funil | $p_{\text{NB101}} = 1$ | $1$ (Mantém) | $0$ (Desliga) | Inalterado | **Operacional (Anti-Seco)** |
-| **C08** | Grão Categoria C na Posição | $p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}$ | Inalterado | Inalterado | $1$ (Pulso $T_{\text{sopro}}$) | **Execução de Ejeção** |
+| **C08A**| Grão Categoria B na Posição B | $p_B \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}$ | Inalterado | Inalterado | $c_{\text{FY602}} = 1$ (Pulso $T_{\text{sopro}}$) | **Ejeção Secundária** |
+| **C08B**| Grão Categoria C na Posição C | $p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}$ | Inalterado | Inalterado | $c_{\text{FY603}} = 1$ (Pulso $T_{\text{sopro}}$) | **Ejeção de Rejeito** |
 
 ---
 
@@ -76,9 +78,10 @@ A matriz a seguir mapeia as causas físicas (eventos de processo e falhas) e seu
 As definições lógicas estabelecidas para a planta são as seguintes premissas axiomáticas:
 
 $$\begin{aligned}
-\text{Premissa 1 (P1):} \quad & c_{\text{PERM}} \leftrightarrow (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}) \\
+\text{Premissa 1 (P1):} \quad & c_{\text{PERM}} \leftrightarrow (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}) \\
 \text{Premissa 2 (P2):} \quad & c_{\text{ALIM}} \leftrightarrow (c_{\text{PERM}} \land p_{\text{MOV201}} \land \neg p_{\text{NB101}}) \\
-\text{Premissa 3 (P3):} \quad & c_{\text{FY603}} \leftrightarrow (p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}) \\
+\text{Premissa 3A (P3A):} \quad & c_{\text{FY602}} \leftrightarrow (p_B \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}) \\
+\text{Premissa 3B (P3B):} \quad & c_{\text{FY603}} \leftrightarrow (p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}) \\
 \text{Premissa 4 (P4):} \quad & p_A \leftrightarrow (p_{\text{CV101}} \land p_{\text{CV103}} \land p_{\text{CV105}} \land \neg p_{\text{CV107}} \land \neg p_{\text{CV108}} \land \neg p_{\text{CV109}}) \\
 \text{Premissa 5 (P5):} \quad & p_C \leftrightarrow \Big( p_{\text{CV107}} \lor p_{\text{CV108}} \lor p_{\text{CV109}} \lor (\neg p_{\text{CV101}} \land \neg p_{\text{CV102}}) \lor (\neg p_{\text{CV103}} \land \neg p_{\text{CV104}}) \lor (\neg p_{\text{CV105}} \land \neg p_{\text{CV106}}) \Big) \\
 \text{Premissa 6 (P6):} \quad & p_B \leftrightarrow (\neg p_A \land \neg p_C)
@@ -88,14 +91,14 @@ $$\begin{aligned}
 
 ## 4.1. Teorema 1: Garantia de Desligamento da Alimentação em Falha Crítica
 
-**Enunciado:** *Se ocorrer qualquer condição de Trip crítico ($p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$), é impossível que o Alimentador Vibratório continue ligado ($c_{\text{ALIM}} = 0$).*
+**Enunciado:** *Se ocorrer qualquer condição de Trip crítico ($p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$), é impossível que o Alimentador Vibratório continue ligado ($c_{\text{ALIM}} = 0$).*
 
 $$\text{Trip}_{\text{GERAL}} \implies \neg c_{\text{ALIM}}$$
 
 ### Prova Dedutiva Formal:
 
-1. $\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$ *(Hipótese)*
-2. Por De Morgan: $\neg \text{Trip}_{\text{GERAL}} \equiv \neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}$
+1. $\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$ *(Hipótese)*
+2. Por De Morgan: $\neg \text{Trip}_{\text{GERAL}} \equiv \neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}$
 3. De P1, $c_{\text{PERM}} \leftrightarrow \neg \text{Trip}_{\text{GERAL}}$
 4. Se $\text{Trip}_{\text{GERAL}} = 1$, então $\neg \text{Trip}_{\text{GERAL}} = 0$
 5. Portanto, por Modus Ponens em (3), $c_{\text{PERM}} = 0$
@@ -110,7 +113,7 @@ $$\text{Trip}_{\text{GERAL}} \implies \neg c_{\text{ALIM}}$$
 
 ```mermaid
 graph LR
-    TRIP[Trip Geral Ativo: Emerg / Sobrecarga / Ar / Nivel / Visao] --> NOT_PERM[c_PERM = 0]
+    TRIP[Trip Geral Ativo: Emerg / Sobrecarga / Ar / Niveis B-C / Visao] --> NOT_PERM[c_PERM = 0]
     NOT_PERM --> MODUS_TOLLENS[Modus Tollens via P2: c_ALIM -> c_PERM]
     MODUS_TOLLENS --> SHUTDOWN[c_ALIM = 0: Alimentador Desligado Imediatamente]
 ```
@@ -119,27 +122,27 @@ graph LR
 
 ## 4.2. Teorema 2: Impossibilidade de Ejeção com Falha Pneumática
 
-**Enunciado:** *Provar que o estado em que a válvula ejetora é acionada na presença de pressão pneumática baixa é logicamente impossível (tautologia de ausência de falha):*
+**Enunciado:** *Provar que o estado em que qualquer das válvulas ejetoras é acionada na presença de pressão pneumática baixa é logicamente impossível (tautologia de ausência de falha):*
 
-$$\neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1$$
+$$\neg (c_{\text{FY602}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{e} \quad \neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1$$
 
 ### Prova por Contradição (*Reductio ad Absurdum*):
 
-1. Suponha, por absurdo, que o estado perigoso ocorra:
-   $$c_{\text{FY603}} \land p_{\text{PAL601}} = 1$$
+1. Suponha, por absurdo, que o estado perigoso ocorra para $c_{\text{FY602}}$:
+   $$c_{\text{FY602}} \land p_{\text{PAL601}} = 1$$
 2. Por Simplificação Conjuntiva (SIMP), temos:
-   - (a) $c_{\text{FY603}} = 1$
+   - (a) $c_{\text{FY602}} = 1$
    - (b) $p_{\text{PAL601}} = 1$
-3. Da Premissa P3: $c_{\text{FY603}} \leftrightarrow (p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}})$
-4. Como $c_{\text{FY603}} = 1$ por 2(a), segue que a conjunção do lado direito deve ser verdadeira:
-   $$p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}} = 1$$
+3. Da Premissa P3A: $c_{\text{FY602}} \leftrightarrow (p_B \land p_{\text{POS602}} \land \neg p_{\text{PAL601}})$
+4. Como $c_{\text{FY602}} = 1$ por 2(a), segue que a conjunção do lado direito deve ser verdadeira:
+   $$p_B \land p_{\text{POS602}} \land \neg p_{\text{PAL601}} = 1$$
 5. Por Simplificação Conjuntiva em (4):
    $$\neg p_{\text{PAL601}} = 1 \implies p_{\text{PAL601}} = 0$$
 6. Temos agora, simultaneamente:
    $$p_{\text{PAL601}} = 1 \quad \text{[de 2(b)]} \quad \land \quad p_{\text{PAL601}} = 0 \quad \text{[de (5)]}$$
 7. Conjunção: $p_{\text{PAL601}} \land \neg p_{\text{PAL601}} \equiv 0$ (**Contradição Absoluta!**)
-8. Logo, a suposição inicial é falsa. Conclui-se que:
-   $$\neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{(Tautologia provada)}$$
+8. Logo, a suposição inicial é falsa. Conclui-se que $\neg (c_{\text{FY602}} \land p_{\text{PAL601}}) \equiv 1$.
+9. O mesmo raciocínio aplica-se identicamente à válvula $c_{\text{FY603}}$ via Premissa P3B, garantindo $\neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1$. **(Tautologias provadas)**
 
 ---
 
@@ -200,17 +203,17 @@ $$\text{Exaustividade:} \quad p_A \lor p_B \lor p_C \equiv 1$$
 
 ---
 
-## 4.5. Teorema 5: Proteção Contra Transbordo do Silo de Rejeito
+## 4.5. Teorema 5: Proteção Contra Transbordo dos Silos de Saída (B e C)
 
-**Enunciado:** *O atingimento do nível crítico no silo de descarte bloqueia o processo e desarma o alimentador:*
+**Enunciado:** *O atingimento do nível crítico em qualquer um dos silos de destino (Silo B de produto secundário ou Silo C de rejeito) bloqueia o processo e desarma o alimentador:*
 
-$$p_{\text{NC703}} \implies \neg c_{\text{ALIM}}$$
+$$p_{\text{NC702}} \implies \neg c_{\text{ALIM}} \quad \text{e} \quad p_{\text{NC703}} \implies \neg c_{\text{ALIM}}$$
 
 ### Prova:
-1. $p_{\text{NC703}} = 1 \implies \neg p_{\text{NC703}} = 0$.
-2. Por P1: $c_{\text{PERM}} = \dots \land \neg p_{\text{NC703}} \land \dots = \dots \land 0 \land \dots \equiv 0$.
+1. $p_{\text{NC702}} = 1 \implies \neg p_{\text{NC702}} = 0$ (e similarmente para $p_{\text{NC703}}$).
+2. Por P1: $c_{\text{PERM}} = \dots \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land \dots = \dots \land 0 \land \dots \equiv 0$.
 3. Por P2: $c_{\text{ALIM}} = c_{\text{PERM}} \land \dots = 0 \land \dots \equiv 0$.
-4. Logo, $p_{\text{NC703}} \implies \neg c_{\text{ALIM}}$. **(Provado)**
+4. Logo, $(p_{\text{NC702}} \lor p_{\text{NC703}}) \implies \neg c_{\text{ALIM}}$. **(Provado)**
 
 ---
 

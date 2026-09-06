@@ -69,8 +69,13 @@ A parte a seguir apresenta o catálogo de tags referente aos sensores, atuadores
 | **KXA-503** | Algoritmo de Visão Computacional | Não se aplica — variável lógica/calculada | Grão inspecionado classificado como Categoria C | Falso | Verdadeiro | `p_C` (≡ KXA-503) |
 | **PT-601** | Transmissor de pressão piezoelétrico | Pressão | Medição contínua da pressão da linha pneumática | N/A (Analógico) | N/A (Analógico) | — (analógica; usada no cálculo de `PAL-601`) |
 | **PAL-601** | Pressostato digital / CLP | Pressão | Pressão de ar comprimido abaixo do mínimo operacional | Pressão normal | Pressão baixa | `p_PAL601` |
-| **FY-603** | Válvula solenoide ultrarrápida | Não se aplica — variável lógica/calculada | Comando de disparo do ejetor da Categoria C | Válvula fechada | Válvula acionada | `c_FY603` |
-| **ZSH-601** | Sensor magnético de cilindro | Posição | Confirmação física de avanço do atuador pneumático | Atuador recuado | Atuador avançado | `p_ZSH601` |
+| **ZC-602** | CLP (*Shift Register*) | Posição calculada | Grão Categoria B posicionado sob o bocal de ejeção B | Fora do bocal B | Alinhado no bocal B | `p_POS602` |
+| **FY-602** | Válvula solenoide ultrarrápida | Comando digital | Comando de disparo do ejetor da Categoria B | Válvula fechada | Válvula acionada | `c_FY602` |
+| **ZSH-602** | Sensor magnético de cilindro | Posição | Confirmação física de avanço do atuador B | Atuador B recuado | Atuador B avançado | `p_ZSH602` |
+| **LIT-702** | Sensor de nível ultrassônico | Nível | Medição contínua do nível no recipiente Categoria B | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NA702`, `p_NC702`) |
+| **ZC-603** | CLP (*Shift Register*) | Posição calculada | Grão Categoria C posicionado sob o bocal de ejeção C | Fora do bocal C | Alinhado no bocal C | `p_POS603` |
+| **FY-603** | Válvula solenoide ultrarrápida | Comando digital | Comando de disparo do ejetor da Categoria C | Válvula fechada | Válvula acionada | `c_FY603` |
+| **ZSH-601** | Sensor magnético de cilindro | Posição | Confirmação física de avanço do atuador C | Atuador C recuado | Atuador C avançado | `p_ZSH601` |
 | **LIT-703** | Sensor de nível ultrassônico | Nível | Medição contínua do nível no recipiente Categoria C | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NA703`, `p_NC703`) |
 | **N/A** | Lógica de intertravamento (CLP) | Não se aplica — variável lógica/calculada | Permissão geral para operação da planta | Condição impeditiva | Planta liberada | `c_PERM` |
 | **N/A** | Variável calculada (SCADA) | Não se aplica — variável lógica/calculada | Taxa de rejeição total (Categoria C) em relação ao total | N/A (Analógico) | N/A (Analógico) | — (analógica/calculada, %) |

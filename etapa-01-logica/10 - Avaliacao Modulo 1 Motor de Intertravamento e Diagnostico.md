@@ -19,8 +19,8 @@ O escopo integrador unifica três pilares fundamentais:
 ```mermaid
 flowchart TD
     subgraph Campo ["1. Camada de Instrumentação & Campo (ISA 5.1)"]
-        S_AN["Transmissores Analógicos 4-20mA\n(LIT-101, ST-201, WT-301, PT-601, LIT-703)"]
-        S_DIG["Sensores Discretos e Atuadores\n(XA-901, JI-201, XS-401, KSA-401, ZSH-601)"]
+        S_AN["Transmissores Analógicos 4-20mA\n(LIT-101, ST-201, WT-301, PT-601, LIT-702, LIT-703)"]
+        S_DIG["Sensores Discretos e Atuadores\n(XA-901, JI-201, XS-401, KSA-401, ZSH-602, ZSH-601)"]
     end
 
     subgraph Condicionamento ["2. Condicionamento de Sinal & Padrão NAMUR NE43"]
@@ -32,13 +32,13 @@ flowchart TD
     subgraph Intertravamento ["3. Motor de Intertravamento Reativo (Safety Engine)"]
         PERM["Permissivo Geral c_PERM\nTrip Crítico = Emerg ∨ Sobrecarga ∨ Ar ∨ Nivel ∨ FalhaLaço"]
         ALIM["Comando Seguro c_ALIM\nc_ALIM ≡ c_PERM ∧ p_MOV201 ∧ ¬p_NB101"]
-        EJET["Comando Ejeção c_FY603\nc_FY603 ≡ p_C ∧ p_POS603 ∧ ¬p_PAL601"]
+        EJET["Comandos Ejeção c_FY602 e c_FY603\nc_FY602 ≡ p_B ∧ p_POS602 ∧ ¬p_PAL601\nc_FY603 ≡ p_C ∧ p_POS603 ∧ ¬p_PAL601"]
         PROOFS["Verificador Formal de Tautologias\n¬(Insegurança) ≡ 1 (Tautologia Provada)"]
     end
 
     subgraph Especialista ["4. Sistema Especialista Dedutivo (Forward Chaining)"]
         WM[("Memória de Trabalho F\nFatos Primitivos + Fatos Derivados")]
-        KB[("Base de Conhecimento R\nCláusulas de Horn R01 a R14")]
+        KB[("Base de Conhecimento R\nCláusulas de Horn R01 a R16")]
         ENGINE["Motor de Inferência T_R\nConvergência para Ponto Fixo (Knaster-Tarski)\nResolução de Conflitos (Severidade > Especificidade)"]
         AUDIT["Audit Trail & Explanation Facility\nRastreamento de Causa Raiz ('HOW' e 'WHY')"]
     end
@@ -112,12 +112,14 @@ O mapeamento contínuo-discreto converte a grandeza física $y_x$ em proposiçõ
 | **WT-301** | Célula de Carga (Balança Dinâmica) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 50.0\text{ kg}$ | $p_{\text{SOBRE\_WT}}$ (Sobrecarga de Massa)<br>$p_{\text{TARA\_WT}}$ (Massa Residual) | $p_{\text{SOBRE\_WT}} \iff y > 45.0\text{ kg}$<br>$p_{\text{TARA\_WT}} \iff (y > 0.50\text{ kg} \land \neg c_{\text{ALIM}})$ |
 | **FT-301** | Vazão Mássica Calculada ($Q_m = \Delta m / \Delta t$) | N/A (Calculada) | $0.0 \dots 1000.0\text{ kg/h}$ | $p_{\text{VAZAO\_NULA}}$ (Sem fluxo de produto) | $p_{\text{VAZAO\_NULA}} \iff y < 10.0\text{ kg/h}$ |
 | **PT-601** | Transmissor Piezoelétrico (Linha de Ar) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 10.0\text{ bar}$ | $p_{\text{PAL601}}$ (Pressão Pneumática Baixa) | $p_{\text{PAL601}} \iff y < 6.0\text{ bar}$ |
-| **LIT-703** | Transmissor Ultrassônico (Silo Rejeito C) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 100.0\text{ \%}$ | $p_{\text{NA703}}$ (Silo Quase Cheio)<br>$p_{\text{NC703}}$ (Silo Saturado/Crítico) | $p_{\text{NA703}} \iff y \ge 80.0\%$<br>$p_{\text{NC703}} \iff y \ge 95.0\%$ |
+| **LIT-702** | Transmissor Ultrassônico (Silo Secundário B) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 100.0\text{ \%}$ | $p_{\text{NA702}}$ (Silo B Quase Cheio)<br>$p_{\text{NC702}}$ (Silo B Saturado/Crítico) | $p_{\text{NA702}} \iff y \ge 80.0\%$<br>$p_{\text{NC702}} \iff y \ge 95.0\%$ |
+| **LIT-703** | Transmissor Ultrassônico (Silo Rejeito C) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 100.0\text{ \%}$ | $p_{\text{NA703}}$ (Silo C Quase Cheio)<br>$p_{\text{NC703}}$ (Silo C Saturado/Crítico) | $p_{\text{NA703}} \iff y \ge 80.0\%$<br>$p_{\text{NC703}} \iff y \ge 95.0\%$ |
 | **XA-901** | Botoeira de Emergência (Tipo Cogumelo) | Discreto (24VDC) | Binário $\{0, 1\}$ | $p_{\text{EMERG}}$ (Parada de Emergência Ativa) | $p_{\text{EMERG}} = 1$ quando contato aberto |
 | **JI-201** | Relé Térmico Digital (Motor da Esteira) | Discreto (24VDC) | Binário $\{0, 1\}$ | $p_{\text{JI201}}$ (Sobrecarga Térmica Atuada) | $p_{\text{JI201}} = 1$ quando corrente $> I_{\text{nominal}}$ |
 | **XS-401** | Sensor Fotoelétrico de Barreira (Trigger) | Discreto (24VDC) | Binário $\{0, 1\}$ | $p_{\text{XS401}}$ (Grão sob o Foco da Câmera) | $p_{\text{XS401}} = 1$ na interrupção de feixe |
 | **KSA-401** | Heartbeat de Rede da Câmera Industrial | Discreto (Ethernet) | Binário $\{0, 1\}$ | $p_{\text{KSA401}}$ (Subsistema de Visão OK) | $p_{\text{KSA401}} = 1$ quando serviço responde |
-| **ZSH-601** | Sensor Magnético de Posição (Cilindro Ejetor) | Discreto (24VDC) | Binário $\{0, 1\}$ | $p_{\text{ZSH601}}$ (Êmbolo Avançado Fisicamente) | $p_{\text{ZSH601}} = 1$ no fim de curso frontal |
+| **ZSH-602** | Sensor Magnético de Posição (Cilindro Ejetor B) | Discreto (24VDC) | Binário $\{0, 1\}$ | $p_{\text{ZSH602}}$ (Êmbolo B Avançado Fisicamente) | $p_{\text{ZSH602}} = 1$ no fim de curso frontal |
+| **ZSH-601** | Sensor Magnético de Posição (Cilindro Ejetor C) | Discreto (24VDC) | Binário $\{0, 1\}$ | $p_{\text{ZSH601}}$ (Êmbolo C Avançado Fisicamente) | $p_{\text{ZSH601}} = 1$ no fim de curso frontal |
 | **KXA-501/2/3**| Classificação de Qualidade da Visão | Discreto (IA) | Binário $\{0, 1\}$ | $p_A, p_B, p_C$ (Classes Exclusivas do Grão) | Atribuição disjunta baseada em defeitos |
 
 ---
@@ -131,10 +133,11 @@ Na Engenharia de Automação, o **motor de intertravamento** constitui a barreir
 Definimos as seguintes premissas axiomáticas ($\Gamma$) que governam o comportamento do CLP:
 
 $$\begin{aligned}
-\text{Axioma 1 (Trip Geral):} \quad & \text{Trip}_{\text{GERAL}} \iff \Big( p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}} \lor \bigvee_{x} \text{FalhaLaço}(x) \Big) \\
+\text{Axioma 1 (Trip Geral):} \quad & \text{Trip}_{\text{GERAL}} \iff \Big( p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}} \lor \bigvee_{x} \text{FalhaLaço}(x) \Big) \\
 \text{Axioma 2 (Permissivo Geral):} \quad & c_{\text{PERM}} \iff \neg \text{Trip}_{\text{GERAL}} \\
 \text{Axioma 3 (Alimentador Vibratório):} \quad & c_{\text{ALIM}} \iff (c_{\text{PERM}} \land p_{\text{MOV201}} \land \neg p_{\text{NB101}}) \\
-\text{Axioma 4 (Válvula Ejetora Categoria C):} \quad & c_{\text{FY603}} \iff (p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}) \\
+\text{Axioma 4A (Válvula Ejetora B):} \quad & c_{\text{FY602}} \iff (p_B \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}) \\
+\text{Axioma 4B (Válvula Ejetora C):} \quad & c_{\text{FY603}} \iff (p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}) \\
 \text{Axioma 5 (Motor da Esteira):} \quad & c_{\text{ESTEIRA}} \iff (c_{\text{PERM}} \land \neg p_{\text{JI201}})
 \end{aligned}$$
 
@@ -146,7 +149,7 @@ Como estudante de matemática discreta, aplicamos regras formais de inferência 
 
 ### Teorema I: Desarme Universal da Alimentação sob Trip Crítico
 
-**Enunciado:** *Se qualquer evento de Trip crítico ocorrer na planta (acionamento de emergência, sobrecorrente do motor, ar pneumático insuficiente, silo de refugo saturado, falha na câmera ou rompimento de cabo 4-20mA), é matematicamente impossível que o alimentador vibratório continue acionado.*
+**Enunciado:** *Se qualquer evento de Trip crítico ocorrer na planta (acionamento de emergência, sobrecorrente do motor, ar pneumático insuficiente, qualquer silo saturado, falha na câmera ou rompimento de cabo 4-20mA), é matematicamente impossível que o alimentador vibratório continue acionado.*
 
 $$\Gamma \vdash \text{Trip}_{\text{GERAL}} \implies \neg c_{\text{ALIM}}$$
 
@@ -175,27 +178,27 @@ $$\Gamma \vdash \text{Trip}_{\text{GERAL}} \implies \neg c_{\text{ALIM}}$$
 
 ### Teorema II: Inibição Absoluta de Ejeção Pneumática Cega
 
-**Enunciado:** *A ocorrência de baixa pressão pneumática ($p_{\text{PAL601}} = 1$) torna o acionamento da válvula ejetora $c_{\text{FY603}}$ formalmente impossível, prevenindo que grãos contaminados passem batidos para a linha de produtos nobres.*
+**Enunciado:** *A ocorrência de baixa pressão pneumática ($p_{\text{PAL601}} = 1$) torna o acionamento de qualquer válvula ejetora ($c_{\text{FY602}}$ ou $c_{\text{FY603}}$) formalmente impossível, prevenindo disparos inócuos e contaminação de lotes.*
 
-$$\Gamma \vdash \neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{(Tautologia)}$$
+$$\Gamma \vdash \neg (c_{\text{FY602}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{e} \quad \Gamma \vdash \neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{(Tautologias)}$$
 
 #### Prova por Redução ao Absurdo (*Reductio ad Absurdum*):
 
-1. Suponha, por absurdo ($\neg \text{Tese}$), que exista uma atribuição de valoração $v$ tal que o estado proibido seja verdadeiro:
-   $$v(c_{\text{FY603}} \land p_{\text{PAL601}}) = 1$$
+1. Suponha, por absurdo ($\neg \text{Tese}$), que exista uma atribuição de valoração $v$ e um atuador $k \in \{\text{FY602}, \text{FY603}\}$ tal que o estado proibido seja verdadeiro:
+   $$v(c_k \land p_{\text{PAL601}}) = 1$$
 2. Pela semântica da conjunção ($\land$), isso exige simultaneamente:
-   - (a) $v(c_{\text{FY603}}) = 1$
+   - (a) $v(c_k) = 1$
    - (b) $v(p_{\text{PAL601}}) = 1$
-3. Do Axioma 4, temos a regra física do CLP:
-   $$c_{\text{FY603}} \leftrightarrow (p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}})$$
-4. Como $v(c_{\text{FY603}}) = 1$ por 2(a), o consequente bicondicional deve ser satisfeito:
-   $$v(p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}) = 1$$
+3. Dos Axiomas 4A e 4B, temos a regra física do CLP para cada atuador:
+   $$c_{\text{FY602}} \leftrightarrow (p_B \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}) \quad \text{e} \quad c_{\text{FY603}} \leftrightarrow (p_C \land p_{\text{POS603}} \land \neg p_{\text{PAL601}})$$
+4. Como $v(c_k) = 1$ por 2(a), o consequente bicondicional correspondente deve ser satisfeito:
+   $$v(\dots \land \neg p_{\text{PAL601}}) = 1$$
 5. Aplicando a regra da **Simplificação Conjuntiva (SIMP)** em (4):
    $$v(\neg p_{\text{PAL601}}) = 1 \implies v(p_{\text{PAL601}}) = 0$$
 6. Estabelecemos a conjunção das conclusões 2(b) e (5):
    $$v(p_{\text{PAL601}}) = 1 \quad \land \quad v(p_{\text{PAL601}}) = 0 \implies 1 \land 0 \equiv 0 \quad (\bot \text{ Contradição Absoluta!})$$
 7. Como a hipótese conduziu a uma contradição no reticulado booleano, concluímos por *Reductio ad Absurdum*:
-   $$\neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{Q.E.D.}$$
+   $$\neg (c_{\text{FY602}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{e} \quad \neg (c_{\text{FY603}} \land p_{\text{PAL601}}) \equiv 1 \quad \text{Q.E.D.}$$
 
 ---
 
@@ -232,10 +235,10 @@ $$\Gamma \vdash \exists x \, (\text{FalhaLaço}(x)) \implies \neg c_{\text{PERM}
 
 ## 3.3. Verificação Formal Computacional por Tabela-Verdade ($2^n$ Estados)
 
-Para comprovar que os teoremas não dependem de sutilezas interpretativas, implementamos no notebook um verificador que avalia as $2^6 = 64$ combinações das variáveis primitivas de trip:
-$$\langle p_{\text{EMERG}}, p_{\text{JI201}}, p_{\text{PAL601}}, p_{\text{NC703}}, p_{\text{KSA401}}, \text{FalhaLaço} \rangle$$
+Para comprovar que os teoremas não dependem de sutilezas interpretativas, implementamos no notebook um verificador que avalia as $2^7 = 128$ combinações das variáveis primitivas de trip:
+$$\langle p_{\text{EMERG}}, p_{\text{JI201}}, p_{\text{PAL601}}, p_{\text{NC702}}, p_{\text{NC703}}, p_{\text{KSA401}}, \text{FalhaLaço} \rangle$$
 
-Em todas as $64$ avaliações, a fórmula de segurança de trip satisfaz a identidade booleana:
+Em todas as $128$ avaliações, a fórmula de segurança de trip satisfaz a identidade booleana:
 $$\Phi_{\text{Safety}} = (\text{Trip}_{\text{GERAL}} \lor c_{\text{PERM}}) \land \neg (\text{Trip}_{\text{GERAL}} \land c_{\text{PERM}}) \equiv 1 \quad (\text{Tautologia Estrita / XOR})$$
 
 ---
@@ -280,8 +283,10 @@ $$\begin{aligned}
 \mathcal{R}_{08} &: (p_{\text{TAXA\_REJEICAO\_ALTA}}) \implies \text{Diagnostico}(\text{Lote com Alta Infestação de Pragas ou Grãos Manchados}) \\
 \mathcal{R}_{09} &: (p_{\text{KSA401}} \land p_{\text{XS401}} \land p_{\text{REJEICAO\_ANOMALA}}) \implies \text{CausaRaiz}(\text{Lente Óptica Empoeirada ou Luminária LED Defeituosa}) \\
 \mathcal{R}_{10} &: (p_{\text{PAL601}}) \implies \text{CausaRaiz}(\text{Queda Crítica de Pressão Pneumática Principal (< 6.0 bar)}) \\
-\mathcal{R}_{11} &: (c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}) \implies \text{CausaRaiz}(\text{Bobina da Solenoide FY-603 Queimada ou Carretel Preso}) \\
-\mathcal{R}_{12} &: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{Silo de Refugo Categoria C Saturado (>= 95\%) - Transbordo Iminente}) \\
+\mathcal{R}_{11A} &: (c_{\text{FY602}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH602}}) \implies \text{CausaRaiz}(\text{Falha no Atuador Pneumático FY-602 / Cilindro Preso}) \\
+\mathcal{R}_{11B} &: (c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}) \implies \text{CausaRaiz}(\text{Bobina da Solenoide FY-603 Queimada ou Carretel Preso}) \\
+\mathcal{R}_{12A} &: (p_{\text{NC702}}) \implies \text{CausaRaiz}(\text{Silo Secundário B Saturado (>= 95\%) - Transbordo Iminente}) \\
+\mathcal{R}_{12B} &: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{Silo de Refugo Categoria C Saturado (>= 95\%) - Transbordo Iminente}) \\
 \mathcal{R}_{13} &: (\text{FalhaLaço}(\text{LIT-101})) \implies \text{CausaRaiz}(\text{Cabo do Transmissor de Nível LIT-101 Rompido ou Curto-Circuito}) \\
 \mathcal{R}_{14} &: (\text{FalhaLaço}(\text{PT-601})) \implies \text{CausaRaiz}(\text{Transmissor de Pressão PT-601 Inoperante - Sinal Fora da Faixa NAMUR})
 \end{aligned}$$
@@ -290,7 +295,8 @@ Regras de Propagação de Trip Geral e Bloqueios em Cascata:
 $$\begin{aligned}
 \mathcal{R}_{\text{TRIP\_EMERG}} &: (p_{\text{EMERG}}) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{TRIP\_PNEUM}} &: (\text{CausaRaiz}(\text{Queda Crítica de Pressão Pneumática})) \implies \text{TripGeral} \\
-\mathcal{R}_{\text{TRIP\_SILO}}  &: (\text{CausaRaiz}(\text{Silo de Refugo Caturado})) \implies \text{TripGeral} \\
+\mathcal{R}_{\text{TRIP\_SILO\_B}} &: (\text{CausaRaiz}(\text{Silo Secundário B Saturado})) \implies \text{TripGeral} \\
+\mathcal{R}_{\text{TRIP\_SILO\_C}} &: (\text{CausaRaiz}(\text{Silo de Refugo C Saturado})) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{TRIP\_LACO}}  &: (\text{FalhaLaço}(\text{LIT-101}) \lor \text{FalhaLaço}(\text{PT-601})) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{BLOQUEIO}}   &: (\text{TripGeral}) \implies \text{BloqueiaAlimentador} \land \text{BloqueiaEjetor}
 \end{aligned}$$
@@ -313,19 +319,22 @@ A explicabilidade operacional é viabilizada pelo registro contínuo da árvore 
 
 # 5. Suíte de Testes de Estresse e Validação 100% dos Cenários Operacionais
 
-Para cumprir o entregável da Aula 10, formulamos uma suíte de testes de estresse industrial que submete o sistema integrado a 8 cenários representativos de operação nominal, falhas pontuais e estresse simultâneo severo.
+Para cumprir o entregável da Aula 10, formulamos uma suíte de testes de estresse industrial que submete o sistema integrado a 10 cenários representativos de operação nominal, falhas pontuais e estresse simultâneo severo, cobrindo ambos os atuadores pneumáticos e ambos os silos de descarte/seleção.
 
-## 5.1. Matriz dos 8 Cenários de Estresse da Planta
+## 5.1. Matriz dos 10 Cenários de Estresse da Planta
 
 | Cenário ID | Descrição do Cenário Industrial | Injeção de Sinais Elétricos (Telemetria) | Condição Booleana | Efeito Esperado no Intertravamento | Diagnóstico Esperado (Forward Chaining) |
 | :---: | :--- | :--- | :---: | :---: | :--- |
-| **C01** | Operação Nominal em Regime Permanente | LIT-101 = $12.0\text{ mA}$ ($50\%$); ST-201 = $14.67\text{ mA}$ ($2.0\text{ m/s}$); PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); LIT-703 = $6.4\text{ mA}$ ($15\%$) | Todos nominais | $c_{\text{PERM}} = 1$<br>$c_{\text{ALIM}} = 1$<br>$c_{\text{ESTEIRA}} = 1$ | Nenhum trip ou causa raiz anormal. Planta operando em regime de alta eficiência. |
-| **C02** | Queda Crítica de Pressão Pneumática | PT-601 = $11.2\text{ mA}$ ($4.5\text{ bar} < 6.0\text{ bar}$) | $p_{\text{PAL601}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>$c_{\text{FY603}} = 0$ | $\mathcal{R}_{10}$: Queda Crítica de Pressão Pneumática $\to \mathcal{R}_{\text{TRIP\_PNEUM}} \to \text{TripGeral}$. |
+| **C01** | Operação Nominal em Regime Permanente | LIT-101 = $12.0\text{ mA}$ ($50\%$); ST-201 = $14.67\text{ mA}$ ($2.0\text{ m/s}$); PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); LIT-702 = $6.4\text{ mA}$ ($15\%$); LIT-703 = $6.4\text{ mA}$ ($15\%$) | Todos nominais | $c_{\text{PERM}} = 1$<br>$c_{\text{ALIM}} = 1$<br>$c_{\text{ESTEIRA}} = 1$ | Nenhum trip ou causa raiz anormal. Planta operando em regime de alta eficiência. |
+| **C02** | Queda Crítica de Pressão Pneumática | PT-601 = $11.2\text{ mA}$ ($4.5\text{ bar} < 6.0\text{ bar}$) | $p_{\text{PAL601}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>$c_{\text{FY602}} = c_{\text{FY603}} = 0$ | $\mathcal{R}_{10}$: Queda Crítica de Pressão Pneumática $\to \mathcal{R}_{\text{TRIP\_PNEUM}} \to \text{TripGeral}$. |
 | **C03** | Travamento Mecânico do Rolo da Esteira com Sobrecarga Térmica | ST-201 = $4.0\text{ mA}$ ($0.0\text{ m/s}$); JI-201 = Ativo ($24\text{V}$); Comando $c_{\text{ESTEIRA}} = 1$ | $p_{\text{JI201}} = 1$<br>$p_{\text{MOV201}} = 0$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>$c_{\text{ESTEIRA}} = 0$ | $\mathcal{R}_{03}$: Travamento Mecânico no Rolo ou Queima de Motor $\to$ Desarme LOTO imediato. |
 | **C04** | Ruptura Física de Cabo 4–20 mA (Broken Wire) no LIT-101 | LIT-101 = $2.0\text{ mA}$ ($< 3.6\text{ mA}$ - Padrão NAMUR NE43) | $\text{FalhaLaço}(\text{LIT-101}) = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{13}$: Falha de laço elétrico por fio partido $\to \mathcal{R}_{\text{TRIP\_LACO}} \to \text{TripGeral}$. |
-| **C05** | Saturação Crítica do Silo de Rejeito Categoria C | LIT-703 = $19.36\text{ mA}$ ($96\% \ge 95\%$) | $p_{\text{NC703}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{12}$: Silo Saturado com Risco de Transbordo $\to \mathcal{R}_{\text{TRIP\_SILO}} \to \text{TripGeral}$. |
-| **C06** | Falha Mecânica/Elétrica na Válvula Solenoide Ejetora FY-603 | Pulso $c_{\text{FY603}} = 1$; PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); ZSH-601 = Inativo ($0\text{V}$) | $c_{\text{FY603}} = 1$<br>$p_{\text{PAL601}} = 0$<br>$p_{\text{ZSH601}} = 0$ | Inibe ejeções subsequentes | $\mathcal{R}_{11}$: Bobina da Solenoide Queimada ou Carretel Travado $\to$ Substituição da válvula. |
-| **C07** | Obstrução Mecânica no Bocal de Descarga do Funil | LIT-101 = $12.0\text{ mA}$ ($50\%$); ST-201 = $14.67\text{ mA}$ ($2.0\text{ m/s}$); FT-301 = $0.0\text{ kg/h}$ | $p_{\text{VAZAO\_NULA}} = 1$<br>$c_{\text{ALIM}} = 1$<br>$\neg p_{\text{NB101}} = 1$ | Bloqueio do alimentador | $\mathcal{R}_{01}$: Obstrução na grelha do funil $\to$ Limpeza mecânica sem parada da esteira. |
-| **C08** | Estresse Máximo: Tempestade de Alarmes Simultâneos | XA-901 = $1$ (Emergência); PT-601 = $3.2\text{ mA}$ (Fio rompido); LIT-703 = $19.68\text{ mA}$ ($98\%$) | Múltiplos fatos críticos | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>Desarme Total | Resolução de conflitos ordena deduções por severidade, registrando todos no Audit Trail. |
+| **C05** | Saturação Crítica do Silo de Rejeito Categoria C | LIT-703 = $19.36\text{ mA}$ ($96\% \ge 95\%$) | $p_{\text{NC703}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{12B}$: Silo Rejeito Saturado $\to \mathcal{R}_{\text{TRIP\_SILO\_C}} \to \text{TripGeral}$. |
+| **C06** | Saturação Crítica do Silo Secundário B | LIT-702 = $19.36\text{ mA}$ ($96\% \ge 95\%$) | $p_{\text{NC702}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{12A}$: Silo Secundário B Saturado $\to \mathcal{R}_{\text{TRIP\_SILO\_B}} \to \text{TripGeral}$. |
+| **C07** | Falha Mecânica/Elétrica no Atuador FY-602 (Ejetor B) | Pulso $c_{\text{FY602}} = 1$; PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); ZSH-602 = Inativo ($0\text{V}$) | $c_{\text{FY602}} = 1$<br>$p_{\text{PAL601}} = 0$<br>$p_{\text{ZSH602}} = 0$ | Inibe ejeção B | $\mathcal{R}_{11A}$: Cilindro FY-602 Preso ou Válvula Travada $\to$ Manutenção da estação B. |
+| **C08** | Falha Mecânica/Elétrica na Válvula Solenoide FY-603 (Ejetor C) | Pulso $c_{\text{FY603}} = 1$; PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); ZSH-601 = Inativo ($0\text{V}$) | $c_{\text{FY603}} = 1$<br>$p_{\text{PAL601}} = 0$<br>$p_{\text{ZSH601}} = 0$ | Inibe ejeção C | $\mathcal{R}_{11B}$: Bobina Solenoide FY-603 Queimada $\to$ Substituição da válvula rápida. |
+| **C09** | Obstrução Mecânica no Bocal de Descarga do Funil | LIT-101 = $12.0\text{ mA}$ ($50\%$); ST-201 = $14.67\text{ mA}$ ($2.0\text{ m/s}$); FT-301 = $0.0\text{ kg/h}$ | $p_{\text{VAZAO\_NULA}} = 1$<br>$c_{\text{ALIM}} = 1$<br>$\neg p_{\text{NB101}} = 1$ | Bloqueio do alimentador | $\mathcal{R}_{01}$: Obstrução na grelha do funil $\to$ Limpeza mecânica sem parada da esteira. |
+| **C10** | Estresse Máximo: Tempestade de Alarmes Simultâneos | XA-901 = $1$ (Emergência); PT-601 = $3.2\text{ mA}$ (Fio rompido); LIT-702 = $19.5\text{ mA}$; LIT-703 = $19.68\text{ mA}$ | Múltiplos fatos críticos | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>Desarme Total | Resolução de conflitos ordena deduções por severidade, registrando todos no Audit Trail. |
 
 ---
+

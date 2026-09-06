@@ -239,24 +239,28 @@ Os grãos serão separados em 3 categorias diferentes, que serão explicadas no 
 
 ## 4.6 Sistema de Ejeção Pneumática
 
-A separação dos grãos será realizada através de **atuadores pneumáticos de alta velocidade**.
+A separação física dos grãos é realizada através de **dois conjuntos de atuadores pneumáticos de alta velocidade** posicionados em sequência ao longo da correia transportadora:
 
-O sistema deverá identificar a posição do grão na esteira e acionar o atuador correspondente no instante correto.
+1. **Estação de Ejeção B (Válvula FY-602):** responsável por desviar lateralmente os grãos classificados como **Categoria B (Secundário)** para a respectiva calha de coleta.
+2. **Estação de Ejeção C (Válvula FY-603):** responsável por desviar lateralmente os grãos classificados como **Categoria C (Rejeito)** para o recipiente de descarte.
+3. **Descarga Terminal (Categoria A):** os grãos aprovados permanecem na esteira e descarregam por gravidade no silo principal ao final do percurso.
 
-A lógica simplificada é:
+O sistema identifica a posição do grão na esteira via encoder e aciona o atuador correspondente no instante exato:
+
+$$c_{\text{FY602}} \equiv p_{\text{B}} \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}$$
 
 $$c_{\text{FY603}} \equiv p_{\text{C}} \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}$$
 
-*(O atuador só é acionado se o grão for classificado como Categoria C, estiver posicionado no bocal de sopro e a pressão pneumática for suficiente).*
+*(O atuador FY-602 só atua para grãos da Categoria B na posição do bocal 2 com pressão OK; o atuador FY-603 só atua para grãos da Categoria C na posição do bocal 3 com pressão OK).*
 
 É fundamental para o funcionamento correto da planta a sincronização entre:
 
-- Câmera;
-- Velocidade da esteira;
-- Posição do grão;
-- Controlador;
-- Válvula pneumática;
-- Atuador.
+- Câmera e iluminação;
+- Velocidade da esteira (encoder);
+- Fila de rastreamento de posições (*shift register*);
+- Controlador lógico programável (CLP);
+- Válvulas pneumáticas de resposta rápida (`FY-602` e `FY-603`);
+- Sensores de confirmação de avanço mecânico (`ZSH-602` e `ZSH-601`).
 
 ---
 

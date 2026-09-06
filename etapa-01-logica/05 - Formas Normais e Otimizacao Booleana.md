@@ -139,6 +139,7 @@ c_PERM ↔ (
     ∧ ¬p_JI201
     ∧ ¬p_PAL601
     ∧ p_KSA401
+    ∧ ¬p_NC702
     ∧ ¬p_NC703
 )
 ```
@@ -148,7 +149,7 @@ Não existem condições repetidas, contraditórias ou constantes.
 Portanto, a expressão já está simplificada:
 
 ```text
-c_PERM ↔ ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC703
+c_PERM ↔ ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC702 ∧ ¬p_NC703
 ```
 
 ### Aplicação da FNC
@@ -160,6 +161,7 @@ A regra pode ser interpretada como um conjunto de restrições:
 ∧ (¬p_JI201)
 ∧ (¬p_PAL601)
 ∧ (p_KSA401)
+∧ (¬p_NC702)
 ∧ (¬p_NC703)
 ```
 
@@ -275,7 +277,59 @@ Isso evita recalcular todas as condições da visão computacional.
 
 ---
 
-## Comando do Ejetor (`c_FY603`)
+## Comando do Ejetor Secundário B (`c_FY602`)
+
+A regra é:
+
+```text
+c_FY602 ↔ p_B ∧ p_POS602 ∧ ¬p_PAL601
+```
+
+Essa expressão já está simplificada.
+
+Se fosse escrita de forma redundante:
+
+```text
+c_FY602 ↔ p_B ∧ p_POS602 ∧ ¬p_PAL601 ∧ p_B
+```
+
+Aplicando **idempotência**:
+
+```text
+p_B ∧ p_B ≡ p_B
+```
+
+obtemos:
+
+```text
+c_FY602 ↔ p_B ∧ p_POS602 ∧ ¬p_PAL601
+```
+
+---
+
+## Diagnóstico de Falha do Ejetor B (`p_FALHA_EJETOR_B`)
+
+A regra é:
+
+```text
+p_FALHA_EJETOR_B ↔ c_FY602 ∧ ¬p_ZSH602
+```
+
+Uma versão redundante poderia ser:
+
+```text
+p_FALHA_EJETOR_B ↔ c_FY602 ∧ ¬p_ZSH602 ∧ c_FY602
+```
+
+Aplicando idempotência ($c_{\text{FY602}} \land c_{\text{FY602}} \equiv c_{\text{FY602}}$), obtemos:
+
+```text
+p_FALHA_EJETOR_B ↔ c_FY602 ∧ ¬p_ZSH602
+```
+
+---
+
+## Comando do Ejetor de Rejeito C (`c_FY603`)
 
 A regra é:
 
@@ -305,18 +359,18 @@ c_FY603 ↔ p_C ∧ p_POS603 ∧ ¬p_PAL601
 
 ---
 
-## Diagnóstico de Falha do Ejetor
+## Diagnóstico de Falha do Ejetor C (`p_FALHA_EJETOR` / `p_FALHA_EJETOR_C`)
 
 A regra é:
 
 ```text
-p_FALHA_EJETOR ↔ c_FY603 ∧ ¬p_ZSH601
+p_FALHA_EJETOR_C ↔ c_FY603 ∧ ¬p_ZSH601
 ```
 
 Uma versão redundante poderia ser:
 
 ```text
-p_FALHA_EJETOR ↔ c_FY603 ∧ ¬p_ZSH601 ∧ c_FY603
+p_FALHA_EJETOR_C ↔ c_FY603 ∧ ¬p_ZSH601 ∧ c_FY603
 ```
 
 Aplicando idempotência:
@@ -328,7 +382,7 @@ c_FY603 ∧ c_FY603 ≡ c_FY603
 Resultado:
 
 ```text
-p_FALHA_EJETOR ↔ c_FY603 ∧ ¬p_ZSH601
+p_FALHA_EJETOR_C ↔ c_FY603 ∧ ¬p_ZSH601
 ```
 
 ---
@@ -395,22 +449,24 @@ A segunda condição é redundante porque, sempre que `p_PAL601 ∧ p_NC703` for
 
 | **Regra do processo** | **Simplificação / técnica** | **Aplicação** |
 | :--- | :--- | :--- |
-| `c_PERM` | FNC / organização | Restrições de segurança |
-| `c_ALIM` | Reutilização de `c_PERM` | Evita repetir condições |
-| `p_A` | Conjunção de condições | Características necessárias |
-| `p_C` | FND/SOP | Caminhos de rejeição |
-| `p_B` | Reutilização de `p_A` e `p_C` | Evita expandir a lógica |
-| `c_FY603` | Idempotência | Remove condições repetidas |
-| `p_FALHA_EJETOR` | Idempotência | Remove condições repetidas |
-| Intertravamentos | Complemento | Detecta contradições |
-| Alarmes | Absorção | Remove condições redundantes |
+| `c_PERM` | FNC / organização | Restrições de segurança (inclui LIT-702 e LIT-703) |
+| `c_ALIM` | Reutilização de `c_PERM` | Evita repetir condições de segurança |
+| `p_A` | Conjunção de condições | Características necessárias do grão aprovado |
+| `p_C` | FND/SOP | Caminhos de rejeição por defeito |
+| `p_B` | Reutilização de `p_A` e `p_C` | Partição por exclusão (evita expandir fórmulas) |
+| `c_FY602` | Idempotência & Reuso | Disparo do atuador pneumático secundário B |
+| `p_FALHA_EJETOR_B` | Idempotência & Reuso | Diagnóstico de falha mecânica da válvula B |
+| `c_FY603` | Idempotência & Reuso | Disparo do atuador pneumático de descarte C |
+| `p_FALHA_EJETOR_C` | Idempotência & Reuso | Diagnóstico de falha mecânica da válvula C |
+| Intertravamentos | Complemento | Detecta contradições em regras de controle |
+| Alarmes | Absorção | Remove condições redundantes em sensores de nível |
 
 ---
 
 # Cadeia Lógica Otimizada
 
 ```text
-c_PERM ↔ ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC703
+c_PERM ↔ ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC702 ∧ ¬p_NC703
 
 c_ALIM ↔ c_PERM ∧ p_MOV201 ∧ ¬p_NB101
 
@@ -423,9 +479,13 @@ p_C ↔ p_CV107 ∨ p_CV108 ∨ p_CV109
 
 p_B ↔ ¬p_A ∧ ¬p_C
 
+c_FY602 ↔ p_B ∧ p_POS602 ∧ ¬p_PAL601
+
+p_FALHA_EJETOR_B ↔ c_FY602 ∧ ¬p_ZSH602
+
 c_FY603 ↔ p_C ∧ p_POS603 ∧ ¬p_PAL601
 
-p_FALHA_EJETOR ↔ c_FY603 ∧ ¬p_ZSH601
+p_FALHA_EJETOR_C ↔ c_FY603 ∧ ¬p_ZSH601
 ```
 
 ---

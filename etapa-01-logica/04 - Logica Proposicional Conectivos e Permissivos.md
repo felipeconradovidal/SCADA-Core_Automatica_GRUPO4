@@ -322,82 +322,77 @@ graph TD
 
 ---
 
-### 2.4. Sistema de Ejeção Pneumática e Atuação ($c_{\text{FY603}}$)
+### 2.4. Sistema de Ejeção Pneumática e Atuação ($c_{\text{FY602}}$ e $c_{\text{FY603}}$)
 
-O acionamento da válvula solenoide do ejetor pneumático é o comando de saída físico responsável por desviar os grãos rejeitados (Categoria C) da esteira principal para o reservatório de rejeitos.
+O sistema de separação física conta com dois atuadores de ejeção pneumática ultrarrápidos independentes:
 
-#### 2.4.1. Permissivo de Disparo do Ejetor Pneumático ($c_{\text{FY603}}$)
+#### 2.4.1. Permissivo de Disparo do Ejetor da Categoria B ($c_{\text{FY602}}$)
 
-A válvula de ejeção só deve ser acionada se o grão for Categoria C, se o *shift register* do CLP confirmar que o grão atingiu a posição física em frente ao bocal e se houver pressão de ar comprimido suficiente para a ejeção.
+A válvula `FY-602` desvia grãos de Categoria B quando atingem o bocal 2 sob pressão nominal:
 
-As condições para o acionamento do atuador são:
-1. Grão classificado como Rejeitado ($p_{\text{C}} = 1$);
-2. Posição física do grão confirmada no bocal ejetor ($p_{\text{POS603}} = 1$);
-3. Ausência de alarme de pressão pneumática baixa ($\neg p_{\text{PAL601}} = 1$).
+$$c_{\text{FY602}} \equiv p_{\text{B}} \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}$$
 
-A expressão lógica do comando de disparo da válvula ejetora é:
+Diagnóstico de Falha do Ejetor B:
+
+$$p_{\text{FALHA\-EJETOR\-B}} \equiv c_{\text{FY602}} \land \neg p_{\text{ZSH602}} \quad \text{(avaliado após tempo } T \text{)}$$
+
+#### 2.4.2. Permissivo de Disparo do Ejetor da Categoria C ($c_{\text{FY603}}$)
+
+A válvula `FY-603` desvia grãos descartados (Categoria C) ao atingirem o bocal 3 sob pressão nominal:
 
 $$c_{\text{FY603}} \equiv p_{\text{C}} \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}$$
 
 ```mermaid
 graph TD
-    P_C[p_C: Grão Categoria C]
-    POS603[p_POS603: Grão na Posição do Bocal]
-    PAL601[p_PAL601: Pressão Pneumática Baixa]
+    subgraph Ejetor_B[Estação de Ejeção B]
+        P_B[p_B: Grão Categoria B]
+        POS602[p_POS602: Grão no Bocal B]
+        AND_FY602[AND]
+        C_FY602[c_FY602: Comando Ejetor B]
+        P_B --> AND_FY602
+        POS602 --> AND_FY602
+        AND_FY602 --> C_FY602
+    end
 
+    subgraph Ejetor_C[Estação de Ejeção C]
+        P_C[p_C: Grão Categoria C]
+        POS603[p_POS603: Grão no Bocal C]
+        AND_FY603[AND]
+        C_FY603[c_FY603: Comando Ejetor C]
+        P_C --> AND_FY603
+        POS603 --> AND_FY603
+        AND_FY603 --> C_FY603
+    end
+
+    PAL601[p_PAL601: Pressão Baixa]
     NOT_PAL601[NOT]
-    AND_FY603[AND]
-    C_FY603[c_FY603: Comando Válvula Ejetora]
-
     PAL601 --> NOT_PAL601
-
-    P_C --> AND_FY603
-    POS603 --> AND_FY603
+    NOT_PAL601 --> AND_FY602
     NOT_PAL601 --> AND_FY603
-
-    AND_FY603 --> C_FY603
 ```
 
-#### 2.4.2. Intertrava e Diagnóstico de Falha do Ejetor ($p_{\text{FALHA\-EJETOR}}$)
+#### 2.4.3. Intertrava e Diagnóstico de Falha do Ejetor C ($p_{\text{FALHA\-EJETOR\-C}}$)
 
-Se o comando de acionamento ($c_{\text{FY603}}$) for enviado à válvula solenoide, mas o sensor magnético do cilindro ($p_{\text{ZSH601}}$) não confirmar o avanço mecânico dentro de uma janela de tempo limite $T$, o CLP diagnostica uma falha no atuador e gera um sinal de alarme.
+$$p_{\text{FALHA\-EJETOR\-C}} \equiv c_{\text{FY603}} \land \neg p_{\text{ZSH601}} \quad \text{(avaliado após tempo } T \text{)}$$
 
-A expressão lógica da falha do atuador é expressa por:
+#### Demonstração da Relação de Bloqueio dos Atuadores via Leis de De Morgan
 
-$$p_{\text{FALHA\-EJETOR}} \equiv c_{\text{FY603}} \land \neg p_{\text{ZSH601}} \quad \text{(avaliado após tempo } T \text{)}$$
+A condição de bloqueio de cada atuador pneumático é dada pela negação do respectivo comando de disparo:
 
-#### Demonstração da Relação de Bloqueio do Atuador via Leis de De Morgan
+$$\text{Bloqueio}_{\text{FY602}} \equiv \neg c_{\text{FY602}} = \neg (p_{\text{B}} \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}) \equiv \neg p_{\text{B}} \lor \neg p_{\text{POS602}} \lor p_{\text{PAL601}}$$
 
-A condição na qual a ejeção fica **impedida ou bloqueada** ($\text{Bloqueio}_{\text{FY603}}$) é a negação do comando de disparo ($c_{\text{FY603}}$). Aplicando as Leis de De Morgan:
-
-$$\text{Bloqueio}_{\text{FY603}} \equiv \neg c_{\text{FY603}}$$
-
-$$\text{Bloqueio}_{\text{FY603}} \equiv \neg (p_{\text{C}} \land p_{\text{POS603}} \land \neg p_{\text{PAL601}})$$
-
-$$\text{Bloqueio}_{\text{FY603}} \equiv \neg p_{\text{C}} \lor \neg p_{\text{POS603}} \lor \neg(\neg p_{\text{PAL601}})$$
-
-Simplificando a dupla negação:
-
-$$\text{Bloqueio}_{\text{FY603}} \equiv \neg p_{\text{C}} \lor \neg p_{\text{POS603}} \lor p_{\text{PAL601}}$$
-
-Ou seja, o acionamento pneumático é inibido se o grão **não** for Categoria C, **ou** se ele **não** estiver na posição do bocal, **ou** se houver queda de pressão na linha pneumática ($p_{\text{PAL601}}$).
+$$\text{Bloqueio}_{\text{FY603}} \equiv \neg c_{\text{FY603}} = \neg (p_{\text{C}} \land p_{\text{POS603}} \land \neg p_{\text{PAL601}}) \equiv \neg p_{\text{C}} \lor \neg p_{\text{POS603}} \lor p_{\text{PAL601}}$$
 
 ---
 
-### 2.5. Intertravamento por Transbordo de Rejeitos ($p_{\text{NC703}}$)
+### 2.5. Intertravamento por Transbordo de Silos ($p_{\text{NC702}}$ e $p_{\text{NC703}}$)
 
-Para evitar o derramamento físico de grãos descartados e contaminação da área de processo, o transmissor de nível do reservatório de rejeito ($\text{LIT-703}$) monitora o volume armazenado. Ao atingir o nível crítico de 100% ($p_{\text{NC703}} = 1$), o CLP realiza o bloqueio preventivo da Permissão Geral de Operação.
+Para evitar derramamento físico nos reservatórios de desvio, tanto o silo de grãos secundários ($\text{LIT-702}$) quanto o de rejeito ($\text{LIT-703}$) possuem chaves de nível crítico ($p_{\text{NC702}}$ e $p_{\text{NC703}}$). Ao atingirem 100%, desarmam a Permissão Geral de Operação:
 
-#### Demonstração da Propagação do Intertravamento por De Morgan
-
-Ao incorporar o sinal do sensor de nível crítico $\neg p_{\text{NC703}}$ na Permissão Geral de Operação ($c_{\text{PERM}}$), a condição na qual a planta é colocada em estado de parada por segurança ($\text{Trip}_{\text{GERAL}}$) expande-se conforme:
-
-$$\text{Trip}_{\text{GERAL}} \equiv \neg c_{\text{PERM}}$$
-
-$$\text{Trip}_{\text{GERAL}} \equiv \neg (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}})$$
+$$\text{Trip}_{\text{GERAL}} \equiv \neg c_{\text{PERM}} = \neg (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}})$$
 
 Aplicando as Leis de De Morgan:
 
-$$\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$$
+$$\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$$
 
-Dessa forma, o transbordo do reservatório de rejeito ($p_{\text{NC703}} = 1$) entra diretamente na disjunção de parada do processo, interrompendo imediatamente o alimentador vibratório via desabilitação de $c_{\text{PERM}}$.
+Dessa forma, o transbordo de qualquer um dos reservatórios de coleta interrompe imediatamente o alimentador vibratório via desabilitação de $c_{\text{PERM}}$.

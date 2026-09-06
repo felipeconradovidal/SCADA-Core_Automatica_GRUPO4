@@ -31,11 +31,11 @@ $$\text{Operacional}(s) = \begin{cases} 1, & \text{se o sensor } s \text{ está 
 Para formalizar a planta de seleção de grãos, definem-se os seguintes conjuntos finitos que constituem os universos de discurso:
 
 * **$\mathcal{S}$ (Conjunto de Sensores e Instrumentos):**
-  $$\mathcal{S} = \{\text{LIT-101}, \text{ST-201}, \text{WT-301}, \text{XS-401}, \text{KSA-401}, \text{PAL-601}, \text{ZSH-601}, \text{LIT-703}, \text{XA-901}\}$$
+  $$\mathcal{S} = \{\text{LIT-101}, \text{ST-201}, \text{JI-201}, \text{WT-301}, \text{XS-401}, \text{KSA-401}, \text{PAL-601}, \text{ZSH-601}, \text{ZSH-602}, \text{LIT-702}, \text{LIT-703}, \text{XA-901}\}$$
 * **$\mathcal{S}_{\text{crit}}$ (Subconjunto de Instrumentos de Segurança Crítica):**
-  $$\mathcal{S}_{\text{crit}} = \{\text{XA-901}, \text{JI-201}, \text{PAL-601}, \text{KSA-401}, \text{LIT-703}\} \subset \mathcal{S}$$
+  $$\mathcal{S}_{\text{crit}} = \{\text{XA-901}, \text{JI-201}, \text{PAL-601}, \text{KSA-401}, \text{LIT-702}, \text{LIT-703}\} \subset \mathcal{S}$$
 * **$\mathcal{A}$ (Conjunto de Atuadores e Acionamentos):**
-  $$\mathcal{A} = \{\text{AlimentadorVibratorio}, \text{MotorEsteira}, \text{ValvulaFY603}, \text{SinalizadorSonoro}, \text{SinalizadorVisual}\}$$
+  $$\mathcal{A} = \{\text{AlimentadorVibratorio}, \text{MotorEsteira}, \text{ValvulaFY602}, \text{ValvulaFY603}, \text{SinalizadorSonoro}, \text{SinalizadorVisual}\}$$
 * **$\mathcal{G}$ (Conjunto de Grãos em Trânsito no Ciclo Atual):**
   $$\mathcal{G} = \{g_1, g_2, \dots, g_n\} \quad (\text{lote de grãos sob inspeção})$$
 * **$\mathcal{R}$ (Conjunto de Reservatórios e Silos de Coleta):**
@@ -105,7 +105,7 @@ Para que a planta opere com segurança, a rede de sensores críticos deve estar 
 $$\text{RedeSensoresOK} \iff \forall s \in \mathcal{S}_{\text{crit}}, \; \text{Saudavel}(s)$$
 
 Expandindo para os elementos do conjunto $\mathcal{S}_{\text{crit}}$:
-$$\text{RedeSensoresOK} \iff \text{Saudavel}(\text{XA-901}) \land \text{Saudavel}(\text{JI-201}) \land \text{Saudavel}(\text{PAL-601}) \land \text{Saudavel}(\text{KSA-401}) \land \text{Saudavel}(\text{LIT-703})$$
+$$\text{RedeSensoresOK} \iff \text{Saudavel}(\text{XA-901}) \land \text{Saudavel}(\text{JI-201}) \land \text{Saudavel}(\text{PAL-601}) \land \text{Saudavel}(\text{KSA-401}) \land \text{Saudavel}(\text{LIT-702}) \land \text{Saudavel}(\text{LIT-703})$$
 
 ---
 
@@ -142,8 +142,11 @@ Durante a passagem do lote $\mathcal{G}$ pela esteira sob a câmera $\text{KSA-4
    $$\forall g \in \mathcal{G}, \; \Big( \big( \text{Conforme}(g) \oplus \text{Secundario}(g) \oplus \text{Defeituoso}(g) \big) = 1 \Big)$$
    *Garante matematicamente que cada grão pertence a exatamente uma categoria.*
 
-2. **Gatilho Coletivo de Ejeção Pneumática:**
-   $$\forall g \in \mathcal{G}, \; \Big( \big( \text{Defeituoso}(g) \land \text{NaPosicaoEjetor}(g) \land \neg p_{\text{PAL601}} \big) \implies \text{AtivarEjetor}(g) \Big)$$
+2. **Gatilhos Coletivos de Ejeção Pneumática:**
+   - **Ejetor Secundário FY-602 (Categoria B):**
+     $$\forall g \in \mathcal{G}, \; \Big( \big( \text{Secundario}(g) \land \text{NaPosicaoEjetorB}(g) \land \neg p_{\text{PAL601}} \big) \implies \text{AtivarEjetorB}(g) \Big)$$
+   - **Ejetor de Rejeito FY-603 (Categoria C):**
+     $$\forall g \in \mathcal{G}, \; \Big( \big( \text{Defeituoso}(g) \land \text{NaPosicaoEjetorC}(g) \land \neg p_{\text{PAL601}} \big) \implies \text{AtivarEjetorC}(g) \Big)$$
 
 3. **Alarme de Degradação de Lote na Recepção:**
    Se no lote atual existir uma taxa de rejeitos acima do limiar aceitável $\theta_{\text{rejeito}}$:
@@ -176,7 +179,7 @@ flowchart TD
     
     CheckNivel -- NÃO --> ScanGraos[4. Varredura e Classificação de Grãos: ∀g ∈ G]
     
-    ScanGraos --> ProcessaEjetor[5. Atualização da Fila de Ejeção Pneumática FY-603]
+    ScanGraos --> ProcessaEjetor[5. Atualização das Filas de Ejeção Pneumática FY-602 e FY-603]
     ProcessaEjetor --> LiberaPlanta[Manter c_PERM = 1 e c_ALIM = 1]
     LiberaPlanta --> FimCiclo([Fim do Ciclo / Aguarda Próximo Scan])
     BloqueioOperacao --> FimCiclo
