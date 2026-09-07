@@ -31,9 +31,9 @@ $$\text{Operacional}(s) = \begin{cases} 1, & \text{se o sensor } s \text{ está 
 Para formalizar a planta de seleção de grãos, definem-se os seguintes conjuntos finitos que constituem os universos de discurso:
 
 * **$\mathcal{S}$ (Conjunto de Sensores e Instrumentos):**
-  $$\mathcal{S} = \{\text{LIT-101}, \text{ST-201}, \text{JI-201}, \text{WT-301}, \text{XS-401}, \text{KSA-401}, \text{PAL-601}, \text{ZSH-601}, \text{ZSH-602}, \text{LIT-702}, \text{LIT-703}, \text{XA-901}\}$$
+  $$\mathcal{S} = \{\text{LIT-101}, \text{ST-201}, \text{JI-201}, \text{WT-301}, \text{XS-401}, \text{KSA-401}, \text{PAL-601}, \text{ZSH-601}, \text{ZSH-602}, \text{LIT-701}, \text{LIT-702}, \text{LIT-703}, \text{XA-901}\}$$
 * **$\mathcal{S}_{\text{crit}}$ (Subconjunto de Instrumentos de Segurança Crítica):**
-  $$\mathcal{S}_{\text{crit}} = \{\text{XA-901}, \text{JI-201}, \text{PAL-601}, \text{KSA-401}, \text{LIT-702}, \text{LIT-703}\} \subset \mathcal{S}$$
+  $$\mathcal{S}_{\text{crit}} = \{\text{XA-901}, \text{JI-201}, \text{PAL-601}, \text{KSA-401}, \text{LIT-701}, \text{LIT-702}, \text{LIT-703}\} \subset \mathcal{S}$$
 * **$\mathcal{A}$ (Conjunto de Atuadores e Acionamentos):**
   $$\mathcal{A} = \{\text{AlimentadorVibratorio}, \text{MotorEsteira}, \text{ValvulaFY602}, \text{ValvulaFY603}, \text{SinalizadorSonoro}, \text{SinalizadorVisual}\}$$
 * **$\mathcal{G}$ (Conjunto de Grãos em Trânsito no Ciclo Atual):**
@@ -105,7 +105,7 @@ Para que a planta opere com segurança, a rede de sensores críticos deve estar 
 $$\text{RedeSensoresOK} \iff \forall s \in \mathcal{S}_{\text{crit}}, \; \text{Saudavel}(s)$$
 
 Expandindo para os elementos do conjunto $\mathcal{S}_{\text{crit}}$:
-$$\text{RedeSensoresOK} \iff \text{Saudavel}(\text{XA-901}) \land \text{Saudavel}(\text{JI-201}) \land \text{Saudavel}(\text{PAL-601}) \land \text{Saudavel}(\text{KSA-401}) \land \text{Saudavel}(\text{LIT-702}) \land \text{Saudavel}(\text{LIT-703})$$
+$$\text{RedeSensoresOK} \iff \text{Saudavel}(\text{XA-901}) \land \text{Saudavel}(\text{JI-201}) \land \text{Saudavel}(\text{PAL-601}) \land \text{Saudavel}(\text{KSA-401}) \land \text{Saudavel}(\text{LIT-701}) \land \text{Saudavel}(\text{LIT-702}) \land \text{Saudavel}(\text{LIT-703})$$
 
 ---
 

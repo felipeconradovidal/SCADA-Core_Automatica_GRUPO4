@@ -60,62 +60,64 @@ Variáveis analógicas (`LIT-101`, `ST-201`, `WT-301`, `FT-301`, `PT-601`, `LIT-
 
 O `PAL-601` já é o comparador digital de `PT-601`, então não é necessário derivar outra proposição — `p_PAL601` cobre essa condição (ver tabela de variáveis).
 
-## 2.4 Nível do Reservatório de Rejeito (LIT-703)
+## 2.4 Nível dos Recipientes e Silos de Coleta (LIT-701, LIT-702 e LIT-703)
 
-| Símbolo | Definição | Condição |
+Os três destinos dos grãos na planta (Silo Principal A, Silo Secundário B e Silo de Rejeito C) são instrumentados com transmissores contínuos de nível ultrassônicos/radar, gerando os estados discretizados de pré-alarme e bloqueio crítico:
+
+| Símbolo | Definição | Instrumento e Condição |
 | :--- | :--- | :--- |
-| `p_NA703` | Reservatório cheio (alarme) | `LIT-703 > 90%` |
-| `p_NC703` | Nível crítico (bloqueio) | `LIT-703 ≥ 100%` |
+| `p_NA701` | Silo A nível alto (pré-alarme) | `LIT-701 > 90%` |
+| `p_NC701` | Silo A nível crítico (bloqueio/intertravamento) | `LIT-701 ≥ 99%` |
+| `p_NA702` | Silo B nível alto (pré-alarme) | `LIT-702 > 90%` |
+| `p_NC702` | Silo B nível crítico (bloqueio/intertravamento) | `LIT-702 ≥ 99%` |
+| `p_NA703` | Silo C nível alto (pré-alarme) | `LIT-703 > 90%` |
+| `p_NC703` | Silo C nível crítico (bloqueio/intertravamento) | `LIT-703 ≥ 99%` |
+
+Define-se a macro-proposição de transbordo iminente em qualquer reservatório:
+```
+p_SILO_CHEIO ↔ ( p_NC701 ∨ p_NC702 ∨ p_NC703 )
+```
 
 ---
 
 # 3. Permissão Geral de Operação (`c_PERM`)
 
-De acordo com o descritivo do processo, a planta só pode partir se: não houver sobrecarga no motor da esteira, a pressão pneumática estiver normal e a câmera estiver pronta.
+A planta só pode operar se não houver emergência, o motor não estiver sobrecarregado, a pressão pneumática for suficiente, a câmera estiver pronta e nenhum dos três silos estiver saturado:
 
 ```
-c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 )
+c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC701 ∧ ¬p_NC702 ∧ ¬p_NC703 )
 ```
 
-**Leitura:** a planta está liberada **se e somente se** não houver emergência ativa (`¬p_EMERG`) **E** não houver sobrecarga no motor da esteira (`¬p_JI201`) **E** não houver pressão baixa na linha pneumática (`¬p_PAL601`) **E** a câmera estiver pronta/OK (`p_KSA401`).
+Equivalente, aplicando a lei de De Morgan:
+```
+c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_SILO_CHEIO )
+```
 
-### Tabela-verdade
+**Leitura:** a planta está liberada **se e somente se** não houver emergência ativa (`¬p_EMERG`) **E** não houver sobrecarga no motor da esteira (`¬p_JI201`) **E** não houver pressão baixa na linha pneumática (`¬p_PAL601`) **E** a câmera estiver pronta/OK (`p_KSA401`) **E** nenhum silo estiver em nível crítico (`¬p_SILO_CHEIO`).
 
+## 3.1 Comando do Motor da Esteira (`c_EST`) e Auto-Standby
 
-| `p_EMERG` | `p_JI201` | `p_PAL601` | `p_KSA401` | `c_PERM` |
-| :---: | :---: | :---: | :---: | :---: |
-| 0 | 0 | 0 | 0 | 0 |
-| 0 | 0 | 0 | 1 | **1** |
-| 0 | 0 | 1 | 0 | 0 |
-| 0 | 0 | 1 | 1 | 0 |
-| 0 | 1 | 0 | 0 | 0 |
-| 0 | 1 | 0 | 1 | 0 |
-| 0 | 1 | 1 | 0 | 0 |
-| 0 | 1 | 1 | 1 | 0 |
-| 1 | 0 | 0 | 0 | 0 |
-| 1 | 0 | 0 | 1 | 0 |
-| 1 | 0 | 1 | 0 | 0 |
-| 1 | 0 | 1 | 1 | 0 |
-| 1 | 1 | 0 | 0 | 0 |
-| 1 | 1 | 0 | 1 | 0 |
-| 1 | 1 | 1 | 0 | 0 |
-| 1 | 1 | 1 | 1 | 0 |
+O motor de tração da esteira (`CV-201`) é governado por circuito de selo lógico com auto-standby inteligente para purga e economia de energia:
 
-Apenas a segunda linha libera a planta (`c_PERM = 1`) — é a única combinação em que todas as condições de segurança e disponibilidade estão satisfeitas simultaneamente (`p_EMERG = 0`, `p_JI201 = 0`, `p_PAL601 = 0` e `p_KSA401 = 1`).
+```
+c_EST ↔ c_PERM ∧ ¬p_STANDBY ∧ ( c_EST ∨ b_LIGA ) ∧ ¬b_DESL
+```
+
+**Leitura:** o motor da esteira é mantido energizado **se e somente se** houver permissão geral (`c_PERM`), o modo auto-standby não estiver acionado (`¬p_STANDBY`), e o comando de partida estiver ativo ou retido em selo (`(c_EST ∨ b_LIGA) ∧ ¬b_DESL`). Quando o funil se esvazia (`p_NB101`), o alimentador cessa imediatamente, a esteira segue girando por um tempo de esgotamento (*cascading cleanout*) para descarregar os grãos em trânsito e, ao final, o CLP seta `p_STANDBY = 1`, desligando suavemente a esteira.
 
 ---
 
 # 4. Comando do Alimentador Vibratório (`c_ALIM`)
 
-O alimentador só deve dosar grãos se a planta estiver liberada, a esteira estiver em movimento e o funil não estiver com nível baixo (evitar rodar a seco):
+O alimentador só deve dosar grãos se a planta estiver liberada, a esteira estiver acionada em rotação real e nominal, o funil não estiver desabastecido e nenhum silo estiver em saturação:
 
 ```
-c_ALIM ↔ ( c_PERM ∧ p_MOV201 ∧ ¬p_NB101 )
+c_ALIM ↔ ( c_PERM ∧ c_EST ∧ p_MOV201 ∧ ¬p_NB101 ∧ ¬p_SILO_CHEIO )
 ```
 
-**Leitura:** o alimentador vibratório é acionado **se e somente se** a planta estiver liberada **E** a esteira estiver em movimento **E** o nível do funil não estiver baixo.
+**Leitura:** o alimentador vibratório é acionado **se e somente se** a planta estiver liberada (`c_PERM`) **E** a esteira estiver comandada (`c_EST`) **E** em movimento real (`p_MOV201`) **E** o nível do funil não estiver baixo (`¬p_NB101`) **E** nenhum silo estiver com nível crítico (`¬p_SILO_CHEIO`).
 
-Isso cobre diretamente os dois casos descritos no texto original: parada da esteira (`¬p_MOV201`) ou desabastecimento do funil (`p_NB101`) desligam o alimentador.
+Isso cobre diretamente as condições de segurança: parada da esteira (`¬p_MOV201`), desabastecimento do funil (`p_NB101`) ou saturação de qualquer silo (`p_SILO_CHEIO`) desligam instantaneamente a alimentação.
 
 ---
 
@@ -203,17 +205,21 @@ p_FALHA_EJETOR_C ↔ ( c_FY603 ∧ ¬p_ZSH601 )   [avaliado após tempo limite T
 | :--- | :--- | :--- |
 | Sobrecarga do motor | `Alarme_JI201 ↔ p_JI201` | Dispara quando o relé térmico de sobrecarga muda para 1 |
 | Pressão pneumática baixa | `Alarme_PAL601 ↔ p_PAL601` | Dispara quando a pressão de ar comprimido cai abaixo de 6 bar |
-| Silo secundário cheio | `Alarme_LIT702 ↔ p_NA702` | Alerta visual/sonoro ao atingir nível alto (~80-90%) no silo B |
-| Bloqueio por silo B crítico | `Bloqueio_LIT702 ↔ p_NC702` | Interrompe a alimentação (`c_ALIM → 0`, via `c_PERM`) ao atingir nível crítico |
-| Reservatório de rejeito cheio | `Alarme_LIT703 ↔ p_NA703` | Alerta visual/sonoro ao atingir nível alto (~80-90%) no silo C |
-| Bloqueio por rejeito crítico | `Bloqueio_LIT703 ↔ p_NC703` | Interrompe a alimentação (`c_ALIM → 0`, via `c_PERM`) ao atingir nível crítico |
+| Silo principal cheio | `Alarme_LIT701 ↔ p_NA701` | Alerta visual/sonoro ao atingir nível alto (>90%) no Silo A |
+| Bloqueio por Silo A crítico | `Bloqueio_LIT701 ↔ p_NC701` | Interrompe a esteira e alimentação (`c_PERM → 0`) ao atingir ≥99% |
+| Silo secundário cheio | `Alarme_LIT702 ↔ p_NA702` | Alerta visual/sonoro ao atingir nível alto (>90%) no Silo B |
+| Bloqueio por Silo B crítico | `Bloqueio_LIT702 ↔ p_NC702` | Interrompe a esteira e alimentação (`c_PERM → 0`) ao atingir ≥99% |
+| Reservatório de rejeito cheio | `Alarme_LIT703 ↔ p_NA703` | Alerta visual/sonoro ao atingir nível alto (>90%) no Silo C |
+| Bloqueio por Silo C crítico | `Bloqueio_LIT703 ↔ p_NC703` | Interrompe a esteira e alimentação (`c_PERM → 0`) ao atingir ≥99% |
+| Transbordo crítico geral | `Alarme_SILO_CHEIO ↔ p_SILO_CHEIO` | Intertravamento geral disparado por transbordo em qualquer silo |
+| Auto-Standby de energia | `Aviso_STANDBY ↔ p_STANDBY` | Modo econômico ativado após purga de grãos da esteira |
 | Falha no ejetor B | `Alarme_EJETOR_B ↔ p_FALHA_EJETOR_B` | Ver seção 6.3 |
 | Falha no ejetor C | `Alarme_EJETOR_C ↔ p_FALHA_EJETOR_C` | Ver seção 6.3 |
 
 A proteção contra transbordo de qualquer um dos recipientes de coleta se propaga pela cadeia lógica consolidada de Permissão Geral:
 
 ```
-c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC702 ∧ ¬p_NC703 )
+c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC701 ∧ ¬p_NC702 ∧ ¬p_NC703 )
 ```
 
 ---
@@ -221,18 +227,20 @@ c_PERM ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC702 �
 # 8. Consolidação — Cadeia Lógica Completa
 
 ```
-c_PERM   ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_NC702 ∧ ¬p_NC703 )
-c_ALIM   ↔ c_PERM ∧ p_MOV201 ∧ ¬p_NB101
+p_SILO_CHEIO ↔ ( p_NC701 ∨ p_NC702 ∨ p_NC703 )
+c_PERM       ↔ ( ¬p_EMERG ∧ ¬p_JI201 ∧ ¬p_PAL601 ∧ p_KSA401 ∧ ¬p_SILO_CHEIO )
+c_EST        ↔ c_PERM ∧ ¬p_STANDBY ∧ ( c_EST ∨ b_LIGA ) ∧ ¬b_DESL
+c_ALIM       ↔ c_PERM ∧ c_EST ∧ p_MOV201 ∧ ¬p_NB101 ∧ ¬p_SILO_CHEIO
 
-p_A      ↔ p_CV101 ∧ p_CV103 ∧ p_CV105 ∧ ¬p_CV107 ∧ ¬p_CV108 ∧ ¬p_CV109
-p_C      ↔ p_CV107 ∨ p_CV108 ∨ p_CV109 ∨ (¬p_CV101 ∧ ¬p_CV102) ∨ (¬p_CV103 ∧ ¬p_CV104) ∨ (¬p_CV105 ∧ ¬p_CV106)
-p_B      ↔ ¬p_A ∧ ¬p_C
+p_A          ↔ p_CV101 ∧ p_CV103 ∧ p_CV105 ∧ ¬p_CV107 ∧ ¬p_CV108 ∧ ¬p_CV109
+p_C          ↔ p_CV107 ∨ p_CV108 ∨ p_CV109 ∨ (¬p_CV101 ∧ ¬p_CV102) ∨ (¬p_CV103 ∧ ¬p_CV104) ∨ (¬p_CV105 ∧ ¬p_CV106)
+p_B          ↔ ¬p_A ∧ ¬p_C
 
-c_FY602  ↔ p_B ∧ p_POS602 ∧ ¬p_PAL601
-c_FY603  ↔ p_C ∧ p_POS603 ∧ ¬p_PAL601
+c_FY602      ↔ p_B ∧ p_POS602 ∧ ¬p_PAL601
+c_FY603      ↔ p_C ∧ p_POS603 ∧ ¬p_PAL601
 ```
 
-Essa cadeia cobre, em lógica proposicional formal, todo o fluxo industrial da planta (alimentação → tração → inspeção → classificação tripla → ejeção com 2 atuadores independentes → monitoramento), servindo de base direta para:
+Essa cadeia cobre, em lógica proposicional formal, todo o fluxo industrial da planta (alimentação → tração com auto-standby → inspeção → classificação tripla → ejeção com 2 atuadores independentes → monitoramento simétrico dos 3 silos), servindo de base direta para:
 
 - **Diagrama Ladder / Lista de Instruções (IL)** no CLP;
 - **Tabelas-verdade de validação e testes formais**;

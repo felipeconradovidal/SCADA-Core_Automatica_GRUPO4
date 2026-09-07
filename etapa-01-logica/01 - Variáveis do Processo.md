@@ -58,6 +58,7 @@ A parte a seguir apresenta o catálogo de tags referente aos sensores, atuadores
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **LIT-101** | Transmissor de nível ultrassônico | Nível | Medição contínua do nível do funil de recepção | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NB101`, `p_NA101`, `p_NC101`) |
 | **N/A** | Driver PWM / Inversor de frequência | Frequência | Comando de partida do alimentador vibratório | Alimentador desligado | Alimentador acionado | `c_ALIM` |
+| **N/A** | Contatora / Relé de estado sólido | Comando digital | Comando de energização do motor da esteira (CV-201) | Esteira desenergizada | Esteira acionada | `c_EST` |
 | **ST-201** | Encoder incremental | Velocidade | Medição contínua da velocidade real da esteira | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_MOV201`, `p_VB201`, `p_VA201`) |
 | **JI-201** | Relé de sobrecarga digital | Corrente elétrica | Sobrecarga no motor da esteira | Motor OK | Sobrecarga detectada | `p_JI201` |
 | **WT-301** | Célula de carga com transmissor | Massa | Medição contínua de massa na seção de pesagem | N/A (Analógico) | N/A (Analógico) | — (analógica; usada no cálculo de `FT-301`) |
@@ -72,11 +73,14 @@ A parte a seguir apresenta o catálogo de tags referente aos sensores, atuadores
 | **ZC-602** | CLP (*Shift Register*) | Posição calculada | Grão Categoria B posicionado sob o bocal de ejeção B | Fora do bocal B | Alinhado no bocal B | `p_POS602` |
 | **FY-602** | Válvula solenoide ultrarrápida | Comando digital | Comando de disparo do ejetor da Categoria B | Válvula fechada | Válvula acionada | `c_FY602` |
 | **ZSH-602** | Sensor magnético de cilindro | Posição | Confirmação física de avanço do atuador B | Atuador B recuado | Atuador B avançado | `p_ZSH602` |
+| **LIT-701** | Sensor de nível ultrassônico | Nível | Medição contínua do nível no recipiente Categoria A | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NA701`, `p_NC701`) |
 | **LIT-702** | Sensor de nível ultrassônico | Nível | Medição contínua do nível no recipiente Categoria B | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NA702`, `p_NC702`) |
 | **ZC-603** | CLP (*Shift Register*) | Posição calculada | Grão Categoria C posicionado sob o bocal de ejeção C | Fora do bocal C | Alinhado no bocal C | `p_POS603` |
 | **FY-603** | Válvula solenoide ultrarrápida | Comando digital | Comando de disparo do ejetor da Categoria C | Válvula fechada | Válvula acionada | `c_FY603` |
 | **ZSH-601** | Sensor magnético de cilindro | Posição | Confirmação física de avanço do atuador C | Atuador C recuado | Atuador C avançado | `p_ZSH601` |
 | **LIT-703** | Sensor de nível ultrassônico | Nível | Medição contínua do nível no recipiente Categoria C | N/A (Analógico) | N/A (Analógico) | — (analógica → gera `p_NA703`, `p_NC703`) |
+| **N/A** | Lógica de automação (Temporizador CLP) | Estado de processo | Auto-Standby / Purga de grãos da esteira concluída | Operação / Purga ativa | Standby ativado | `p_STANDBY` |
+| **N/A** | Lógica de intertravamento (CLP) | Nível crítico | Transbordo crítico em qualquer silo (A, B ou C) | Silos normais (<99%) | Transbordo ativo | `p_SILO_CHEIO` |
 | **N/A** | Lógica de intertravamento (CLP) | Não se aplica — variável lógica/calculada | Permissão geral para operação da planta | Condição impeditiva | Planta liberada | `c_PERM` |
 | **N/A** | Variável calculada (SCADA) | Não se aplica — variável lógica/calculada | Taxa de rejeição total (Categoria C) em relação ao total | N/A (Analógico) | N/A (Analógico) | — (analógica/calculada, %) |
 | **XA-901** | Botoeira de Emergência | Não se aplica — variável lógica | Botoeira de parada de emergência do processo | Não há falha no sistema | Estado de Emergência | `p_EMERG` |

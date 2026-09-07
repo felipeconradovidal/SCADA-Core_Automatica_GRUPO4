@@ -181,14 +181,20 @@ A seguir, apresentam-se as regras de diagnóstico organizadas por subsistema do 
 
 ## 3.6. Módulo F — Coleta, Silos de Armazenamento e Transbordo
 
+### Regra R12A0: Silo Principal A em Capacidade Crítica (Risco de Transbordo)
+* **Condição:** Sensor de nível do silo principal A acima de $90\%$ / crítico ($p_{\text{NC701}} = 1$).
+* **Formulação Predicativa:**
+  $$R_{12A0}: (p_{\text{NC701}}) \implies \text{CausaRaiz}(\text{"Silo de Categoria A Cheio sem Esvaziamento"})$$
+* **Ação Recomendada:** Realizar descarga do silo principal A e resetar o alarme na IHM.
+
 ### Regra R12A: Silo Secundário B em Capacidade Crítica (Risco de Transbordo)
-* **Condição:** Sensor de nível do silo secundário acima de $90\%$ ($p_{\text{NC702}} = 1$).
+* **Condição:** Sensor de nível do silo secundário acima de $90\%$ / crítico ($p_{\text{NC702}} = 1$).
 * **Formulação Predicativa:**
   $$R_{12A}: (p_{\text{NC702}}) \implies \text{CausaRaiz}(\text{"Silo de Categoria B Cheio sem Esvaziamento"})$$
 * **Ação Recomendada:** Realizar troca da caçamba/silo de produto secundário B e resetar o alarme na IHM.
 
 ### Regra R12B: Silo de Rejeitos C em Capacidade Crítica (Risco de Transbordo)
-* **Condição:** Sensor de nível do silo de descarte acima de $90\%$ ($p_{\text{NC703}} = 1$).
+* **Condição:** Sensor de nível do silo de descarte acima de $90\%$ / crítico ($p_{\text{NC703}} = 1$).
 * **Formulação Predicativa:**
   $$R_{12B}: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{"Silo de Categoria C Cheio sem Esvaziamento"})$$
 * **Ação Recomendada:** Realizar troca da caçamba de rejeitos C e resetar o alarme na IHM.
@@ -211,6 +217,7 @@ A seguir, apresentam-se as regras de diagnóstico organizadas por subsistema do 
 | **R10** | Pneumática | $p_{\text{PAL601}}$ | Falha no suprimento de ar comprimido | Alta | Verificar rede de ar e compressor |
 | **R11A**| Ejeção | $c_{\text{FY602}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH602}}$ | Falha elétrica/mecânica na válvula FY-602 | Crítica | Trocar solenoide / válvula de ejeção B |
 | **R11B**| Ejeção | $c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}$ | Falha elétrica/mecânica na válvula FY-603 | Crítica | Trocar solenoide / válvula de ejeção C |
+| **R12A0**| Coleta | $p_{\text{NC701}}$ | Silo principal A saturado (90%+) | Alta | Descarregar reservatório de Categoria A |
 | **R12A**| Coleta | $p_{\text{NC702}}$ | Silo secundário B saturado (90%+) | Alta | Substituir reservatório de Categoria B |
 | **R12B**| Coleta | $p_{\text{NC703}}$ | Silo de rejeito C saturado (90%+) | Alta | Substituir reservatório de Categoria C |
 

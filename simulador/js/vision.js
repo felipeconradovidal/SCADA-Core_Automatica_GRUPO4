@@ -154,44 +154,42 @@ export class VisionSystem {
     const w = canvas.width;
     const h = canvas.height;
 
-    // Limpa fundo (estilo visor termográfico / OpenCV dark)
-    ctx.fillStyle = '#0a1017';
+    // Fundo de sensor óptico industrial clássico
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, w, h);
 
-    // Grid de calibração milimétrica
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+    // Grid técnico milimétrico sutil (verde escuro de osciloscópio)
+    ctx.strokeStyle = '#002200';
     ctx.lineWidth = 1;
     for (let x = 0; x < w; x += 20) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
     }
     for (let y = 0; y < h; y += 20) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
 
-    // Retículo / Mira central
-    ctx.strokeStyle = 'rgba(0, 255, 180, 0.4)';
-    ctx.setLineDash([4, 4]);
+    // Retículo óptico central
+    ctx.strokeStyle = '#005500';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
-    ctx.moveTo(w / 2, 10);
-    ctx.lineTo(w / 2, h - 10);
-    ctx.moveTo(10, h / 2);
-    ctx.lineTo(w - 10, h / 2);
+    ctx.moveTo(w / 2, 8); ctx.lineTo(w / 2, h - 8);
+    ctx.moveTo(8, h / 2); ctx.lineTo(w - 8, h / 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
+    // Moldura do sensor
+    ctx.strokeStyle = '#404040';
+    ctx.strokeRect(0, 0, w, h);
+
     if (!grain) {
-      ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
-      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#00ff00';
+      ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('[ AGUARDANDO TRIGGER XS-401 ]', w / 2, h / 2 - 10);
-      ctx.font = '9px monospace';
-      ctx.fillText('CAM SENSOR KSA-401 READY', w / 2, h / 2 + 12);
+      ctx.fillText('[ AGUARDANDO TRIGGER XS-401 ]', w / 2, h / 2 - 6);
+      ctx.font = '8px monospace';
+      ctx.fillStyle = '#a0a0a0';
+      ctx.fillText('CAM SENSOR KSA-401 READY', w / 2, h / 2 + 10);
       return;
     }
 
@@ -202,24 +200,23 @@ export class VisionSystem {
     const gW = grain.length * scale;
     const gH = grain.width * scale;
 
-    // Cor do grão
-    let grainColor = '#f5f5ea'; // Ideal
-    if (grain.colorType === 'secondary') grainColor = '#e6dbb8';
-    if (grain.colorType === 'defect') grainColor = '#6d4c41';
-    if (grain.hasImpurity) grainColor = '#546e7a';
+    // Cor realista do grão de arroz (orgânica)
+    let grainColor = '#f8fafc'; // Branco perolado natural
+    if (grain.colorType === 'secondary') grainColor = '#fef08a'; // Amarelado leve
+    if (grain.colorType === 'defect') grainColor = '#78350f'; // Manchado escuro
+    if (grain.hasImpurity) grainColor = '#64748b'; // Pedrisco / impureza cinza
 
-    // Sombra do grão
+    // Sombra suave do grão na esteira
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetX = 3;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
 
-    // Desenho elíptico do grão de arroz
+    // Forma elíptica do grão de arroz
     ctx.fillStyle = grainColor;
     ctx.beginPath();
     if (grain.hasDamage) {
-      // Grão quebrado
       ctx.ellipse(cx - gW * 0.15, cy, gW * 0.35, gH * 0.45, 0, 0, Math.PI * 2);
     } else {
       ctx.ellipse(cx, cy, gW * 0.48, gH * 0.48, 0, 0, Math.PI * 2);
@@ -227,55 +224,56 @@ export class VisionSystem {
     ctx.fill();
     ctx.restore();
 
-    // Detalhe de Praga (ponto escuro)
+    // Dano de praga / ponto de perfuração
     if (grain.hasPest) {
-      ctx.fillStyle = '#212121';
+      ctx.fillStyle = '#1c1917';
       ctx.beginPath();
-      ctx.arc(cx + 8, cy - 4, 3.5, 0, Math.PI * 2);
+      ctx.arc(cx + 6, cy - 3, 2.8, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#ff3366';
+      ctx.strokeStyle = '#dc2626';
       ctx.stroke();
     }
 
-    // Bounding Box IA com cantos destacados
-    let boxColor = '#00e676'; // Cat A
-    if (grain.classifiedCategory === 'B') boxColor = '#ffb300';
-    if (grain.classifiedCategory === 'C') boxColor = '#ff1744';
+    // Região de Interesse (ROI / Bounding Box) Industrial
+    let boxColor = '#22c55e'; // Cat A: Verde industrial sóbrio
+    let statusText = 'PASS (CAT A)';
+    if (grain.classifiedCategory === 'B') {
+      boxColor = '#f59e0b'; // Cat B: Âmbar
+      statusText = 'TOLERANCE (CAT B)';
+    } else if (grain.classifiedCategory === 'C') {
+      boxColor = '#ef4444'; // Cat C: Vermelho
+      statusText = 'REJECT (CAT C)';
+    }
 
-    const boxPad = 8;
+    const boxPad = 6;
     const bx = cx - gW / 2 - boxPad;
     const by = cy - gH / 2 - boxPad;
     const bw = gW + boxPad * 2;
     const bh = gH + boxPad * 2;
 
     ctx.strokeStyle = boxColor;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.strokeRect(bx, by, bw, bh);
 
-    // Cantos destacados
-    const cl = 6;
-    ctx.lineWidth = 3;
+    // Cantoneiras de alinhamento industrial
+    const cl = 4;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    // Top-left
     ctx.moveTo(bx, by + cl); ctx.lineTo(bx, by); ctx.lineTo(bx + cl, by);
-    // Top-right
     ctx.moveTo(bx + bw - cl, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + cl);
-    // Bottom-left
     ctx.moveTo(bx, by + bh - cl); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + cl, by + bh);
-    // Bottom-right
     ctx.moveTo(bx + bw - cl, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - cl);
     ctx.stroke();
 
-    // Tag e Info Overlay
+    // Badge de Inspeção (Sóbrio)
     ctx.fillStyle = boxColor;
-    ctx.font = 'bold 10px monospace';
+    ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`ID:#${grain.id} CAT:${grain.classifiedCategory || '?'}`, bx, by - 5);
+    ctx.fillText(`ID:#${grain.id} ${statusText}`, bx, by - 4);
 
-    ctx.fillStyle = 'rgba(0, 240, 255, 0.9)';
-    ctx.font = '9px monospace';
-    ctx.fillText(`L: ${grain.length}mm`, bx, by + bh + 12);
-    ctx.fillText(`W: ${grain.width}mm`, bx + 55, by + bh + 12);
-    ctx.fillText(`M: ${(grain.mass * 1000).toFixed(1)}mg`, bx + 110, by + bh + 12);
+    // Telemetria Dimensional
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 8.5px monospace';
+    ctx.fillText(`L:${grain.length}mm  W:${grain.width}mm  M:${(grain.mass * 1000).toFixed(1)}mg`, bx, by + bh + 11);
   }
 }

@@ -8,6 +8,7 @@ import { PLCLogic } from './logic.js';
 import { VisionSystem } from './vision.js';
 import { PlantSimulation } from './engine.js';
 import { SCADACharts } from './charts.js';
+import { IndustrialSCADAView } from './scada_industrial.js';
 
 export class SCADASystem {
   constructor() {
@@ -22,6 +23,10 @@ export class SCADASystem {
     this.distCanvas = document.getElementById('distCanvas');
 
     this.charts = new SCADACharts(this.flowCanvas, this.distCanvas);
+
+    // Módulo SCADA Industrial Real (ISA-101 / ISA-5.1 / ISA-18.2)
+    this.industrialView = new IndustrialSCADAView(this.plc, this.sim, this.vision, this.charts, this);
+    this.currentMode = 'prototype'; // 'prototype' | 'industrial'
 
     // Sistema de Câmera / Zoom & Pan Interativo do Sinótico
     this.viewport = {
@@ -47,6 +52,7 @@ export class SCADASystem {
 
     this.initUI();
     this.initControls();
+    this.initModeSwitcher();
     this.initZoomPanControls();
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
@@ -73,44 +79,49 @@ export class SCADASystem {
 
   initControls() {
     const btnStart = document.getElementById('btnStart');
+    const btnIndStart = document.getElementById('btnIndStart');
     const btnStop = document.getElementById('btnStop');
+    const btnIndStop = document.getElementById('btnIndStop');
     const btnEmerg = document.getElementById('btnEmerg');
+    const btnIndEmerg = document.getElementById('btnIndEmerg');
     const btnAck = document.getElementById('btnAck');
     const btnRefill = document.getElementById('btnRefill');
     const btnEmptyC = document.getElementById('btnEmptyC');
     const btnEmptyB = document.getElementById('btnEmptyB');
+    const btnEmptyA = document.getElementById('btnEmptyA');
     const sliderSpeed = document.getElementById('sliderSpeed');
 
-    if (btnStart) {
-      btnStart.addEventListener('click', () => {
-        if (this.plc.outputs.c_PERM) {
-          this.sim.conveyor.speedSetpoint = parseFloat(sliderSpeed.value);
-          this.logAlarm('COMANDO', 'Comando de PARTIDA enviado pelo operador.', 'INFO');
-        } else {
-          this.logAlarm('INTERTRAVAMENTO', 'Comando de partida rejeitado: Permissivo Geral c_PERM ausente!', 'ALTO');
-        }
-      });
-    }
+    const onStart = () => {
+      if (this.plc.outputs.c_PERM) {
+        this.sim.conveyor.speedSetpoint = parseFloat(sliderSpeed ? sliderSpeed.value : 0.8);
+        this.logAlarm('COMANDO', 'Comando de PARTIDA enviado pelo operador.', 'INFO');
+      } else {
+        this.logAlarm('INTERTRAVAMENTO', 'Comando de partida rejeitado: Permissivo Geral c_PERM ausente!', 'ALTO');
+      }
+    };
+    if (btnStart) btnStart.addEventListener('click', onStart);
+    if (btnIndStart) btnIndStart.addEventListener('click', onStart);
 
-    if (btnStop) {
-      btnStop.addEventListener('click', () => {
+    const onStop = () => {
+      this.sim.conveyor.speedSetpoint = 0.0;
+      this.logAlarm('COMANDO', 'Comando de PARADA enviado pelo operador.', 'INFO');
+    };
+    if (btnStop) btnStop.addEventListener('click', onStop);
+    if (btnIndStop) btnIndStop.addEventListener('click', onStop);
+
+    const onEmerg = () => {
+      this.plc.inputs.p_EMERG = !this.plc.inputs.p_EMERG;
+      if (btnEmerg) btnEmerg.classList.toggle('active', this.plc.inputs.p_EMERG);
+      if (btnIndEmerg) btnIndEmerg.classList.toggle('active', this.plc.inputs.p_EMERG);
+      if (this.plc.inputs.p_EMERG) {
         this.sim.conveyor.speedSetpoint = 0.0;
-        this.logAlarm('COMANDO', 'Comando de PARADA enviado pelo operador.', 'INFO');
-      });
-    }
-
-    if (btnEmerg) {
-      btnEmerg.addEventListener('click', () => {
-        this.plc.inputs.p_EMERG = !this.plc.inputs.p_EMERG;
-        btnEmerg.classList.toggle('active', this.plc.inputs.p_EMERG);
-        if (this.plc.inputs.p_EMERG) {
-          this.sim.conveyor.speedSetpoint = 0.0;
-          this.logAlarm('EMERGÊNCIA', 'Botoeira de Parada de Emergência XA-901 ATIVADA!', 'CRÍTICO');
-        } else {
-          this.logAlarm('EMERGÊNCIA', 'Botoeira de Emergência desarmada. Aguardando ACK.', 'INFO');
-        }
-      });
-    }
+        this.logAlarm('EMERGÊNCIA', 'Botoeira de Parada de Emergência XA-901 ATIVADA!', 'CRÍTICO');
+      } else {
+        this.logAlarm('EMERGÊNCIA', 'Botoeira de Emergência desarmada. Aguardando ACK.', 'INFO');
+      }
+    };
+    if (btnEmerg) btnEmerg.addEventListener('click', onEmerg);
+    if (btnIndEmerg) btnIndEmerg.addEventListener('click', onEmerg);
 
     if (btnAck) {
       btnAck.addEventListener('click', () => {
@@ -125,10 +136,10 @@ export class SCADASystem {
       });
     }
 
-    if (btnEmptyC) {
-      btnEmptyC.addEventListener('click', () => {
-        this.sim.emptySiloC();
-        this.logAlarm('PROCESSO', 'Silo C (Rejeito) esvaziado pelo operador.', 'INFO');
+    if (btnEmptyA) {
+      btnEmptyA.addEventListener('click', () => {
+        this.sim.emptySiloA();
+        this.logAlarm('PROCESSO', 'Silo A (Aprovado) esvaziado pelo operador.', 'INFO');
       });
     }
 
@@ -139,10 +150,18 @@ export class SCADASystem {
       });
     }
 
+    if (btnEmptyC) {
+      btnEmptyC.addEventListener('click', () => {
+        this.sim.emptySiloC();
+        this.logAlarm('PROCESSO', 'Silo C (Rejeito) esvaziado pelo operador.', 'INFO');
+      });
+    }
+
     if (sliderSpeed) {
       sliderSpeed.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
-        document.getElementById('lblSpeedVal').innerText = val.toFixed(2) + ' m/s';
+        const lbl = document.getElementById('lblSpeedVal');
+        if (lbl) lbl.innerText = val.toFixed(2) + ' m/s';
         if (this.sim.conveyor.actualSpeed > 0) {
           this.sim.conveyor.speedSetpoint = val;
         }
@@ -168,16 +187,71 @@ export class SCADASystem {
       if (active) this.logAlarm('KSA-401', 'Falha de comunicação com Câmera de Visão!', 'ALTO');
     });
 
-    this.setupFaultToggle('faultPistonJam', (active) => {
-      this.sim.pneumatics.isJammedC = active;
-      if (active) this.logAlarm('FY-603', 'Pistão C travado mecanicamente! Sensor ZSH-601 não fechará.', 'ALTO');
+    this.setupFaultToggle('faultSiloAFull', (active) => {
+      this.sim.silos.siloA.levelPercent = active ? 100.0 : 20.0;
+      this.sim.silos.siloA.count = active ? 1000 : 200;
+      this.sim.updateSensorsToPLC();
+      if (!active && this.sim.hopper.level >= 15.0 && !this.plc.inputs.p_NC702 && !this.plc.inputs.p_NC703) {
+        this.plc.inputs.p_STANDBY = false;
+        this.sim.purgeTimer = 0.0;
+      }
+      if (active) this.logAlarm('LIT-701', 'Nível Crítico atingido no Silo A (100%) -> Bloqueio de alimentação!', 'CRÍTICO');
+    });
+
+    this.setupFaultToggle('faultSiloBFull', (active) => {
+      this.sim.silos.siloB.levelPercent = active ? 100.0 : 20.0;
+      this.sim.silos.siloB.count = active ? 350 : 70;
+      this.sim.updateSensorsToPLC();
+      if (!active && this.sim.hopper.level >= 15.0 && !this.plc.inputs.p_NC701 && !this.plc.inputs.p_NC703) {
+        this.plc.inputs.p_STANDBY = false;
+        this.sim.purgeTimer = 0.0;
+      }
+      if (active) this.logAlarm('LIT-702', 'Nível Crítico atingido no Silo B (100%) -> Bloqueio de alimentação!', 'CRÍTICO');
     });
 
     this.setupFaultToggle('faultSiloCFull', (active) => {
       this.sim.silos.siloC.levelPercent = active ? 100.0 : 20.0;
       this.sim.silos.siloC.count = active ? 200 : 40;
-      if (active) this.logAlarm('LIT-703', 'Nível Crítico atingido no Silo C (100%) -> Bloqueio c_PERM!', 'CRÍTICO');
+      this.sim.updateSensorsToPLC();
+      if (!active && this.sim.hopper.level >= 15.0 && !this.plc.inputs.p_NC701 && !this.plc.inputs.p_NC702) {
+        this.plc.inputs.p_STANDBY = false;
+        this.sim.purgeTimer = 0.0;
+      }
+      if (active) this.logAlarm('LIT-703', 'Nível Crítico atingido no Silo C (100%) -> Bloqueio de alimentação!', 'CRÍTICO');
     });
+  }
+
+  initModeSwitcher() {
+    const btnSwitchPrototype = document.getElementById('btnSwitchPrototype');
+    const btnSwitchIndustrial = document.getElementById('btnSwitchIndustrial');
+    const viewPrototype = document.getElementById('viewPrototype');
+    const viewScadaIndustrial = document.getElementById('viewScadaIndustrial');
+
+    if (btnSwitchPrototype && btnSwitchIndustrial && viewPrototype && viewScadaIndustrial) {
+      btnSwitchPrototype.addEventListener('click', () => {
+        this.currentMode = 'prototype';
+        viewPrototype.classList.remove('hidden');
+        viewScadaIndustrial.classList.add('hidden');
+
+        btnSwitchPrototype.className = 'mode-switch-btn px-3 py-1 rounded text-xs font-mono font-bold transition-all bg-cyan-950 text-cyan-300 border border-cyan-500/70 shadow-[0_0_10px_rgba(6,182,212,0.3)]';
+        btnSwitchIndustrial.className = 'mode-switch-btn px-3 py-1 rounded text-xs font-mono font-bold transition-all text-slate-400 hover:text-slate-200 border border-transparent';
+      });
+
+      btnSwitchIndustrial.addEventListener('click', () => {
+        this.currentMode = 'industrial';
+        viewPrototype.classList.add('hidden');
+        viewScadaIndustrial.classList.remove('hidden');
+
+        btnSwitchIndustrial.className = 'mode-switch-btn px-3 py-1 rounded text-xs font-mono font-bold transition-all bg-cyan-950 text-cyan-300 border border-cyan-500/70 shadow-[0_0_10px_rgba(6,182,212,0.3)]';
+        btnSwitchPrototype.className = 'mode-switch-btn px-3 py-1 rounded text-xs font-mono font-bold transition-all text-slate-400 hover:text-slate-200 border border-transparent';
+
+        // Atualização imediata do P&ID
+        if (this.industrialView) {
+          this.industrialView.renderPID();
+          this.industrialView.updateAlarmBanner();
+        }
+      });
+    }
   }
 
   initZoomPanControls() {
@@ -323,11 +397,13 @@ export class SCADASystem {
     });
     if (this.alarmList.length > 25) this.alarmList.pop();
     this.renderAlarmTable();
+    if (this.industrialView) this.industrialView.updateAlarmBanner();
   }
 
   acknowledgeAlarms() {
     this.alarmList.forEach(a => a.acked = true);
     this.renderAlarmTable();
+    if (this.industrialView) this.industrialView.updateAlarmBanner();
   }
 
   renderAlarmTable() {
@@ -366,7 +442,7 @@ export class SCADASystem {
     this.viewport.panX += (this.viewport.targetPanX - this.viewport.panX) * Math.min(1.0, dt * 10.0);
     this.viewport.panY += (this.viewport.targetPanY - this.viewport.panY) * Math.min(1.0, dt * 10.0);
 
-    // 1. Atualiza Física & Controle
+    // 1. Atualiza Física & Controle (Núcleo Compartilhado)
     this.sim.update(dt);
 
     // 2. Alarme de discrepância no atuador
@@ -377,13 +453,18 @@ export class SCADASystem {
       this.lastFaultEjector = false;
     }
 
-    // 3. Renderiza Sinótico com Zoom/Pan
+    // 3. Atualiza Camada SCADA Industrial (P&ID, Alarmes ISA-18.2, Faceplates)
+    if (this.industrialView) {
+      this.industrialView.update(dt);
+    }
+
+    // 4. Renderiza Sinótico com Zoom/Pan
     this.renderSynoptic();
 
-    // 4. Renderiza Câmera HUD
+    // 5. Renderiza Câmera HUD
     this.vision.renderCameraHUD(this.cameraCanvas, this.vision.lastInspectedGrain);
 
-    // 5. Gráficos Historiadores
+    // 6. Gráficos Historiadores
     this.chartSampleAccumulator += dt;
     if (this.chartSampleAccumulator >= 0.5) {
       this.chartSampleAccumulator = 0;
@@ -392,7 +473,7 @@ export class SCADASystem {
       this.charts.renderDistribution(this.sim.stats.catACount, this.sim.stats.catBCount, this.sim.stats.catCCount);
     }
 
-    // 6. Atualiza Dashboard
+    // 7. Atualiza Dashboard Didático
     this.updateDashboard();
 
     requestAnimationFrame(this.animate);
@@ -404,8 +485,8 @@ export class SCADASystem {
     const w = this.synopticCanvas.width;
     const h = this.synopticCanvas.height;
 
-    // Fundo fixo da Planta
-    ctx.fillStyle = '#0b1320';
+    // Fundo clássico da Planta (Verde-Ardósia / Teal Industrial #4d7373 da Imagem 2)
+    ctx.fillStyle = '#4d7373';
     ctx.fillRect(0, 0, w, h);
 
     // --- CAMADA FIXA SUPERIOR: INFOGRÁFICO DE PASSOS ---
@@ -423,22 +504,20 @@ export class SCADASystem {
     ctx.translate(this.viewport.panX, this.viewport.panY);
     ctx.scale(this.viewport.zoom, this.viewport.zoom);
 
-    // Grade de fundo que se move com o zoom/pan
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-    ctx.lineWidth = 1;
-    for (let x = -400; x < 1400; x += 30) {
-      ctx.beginPath(); ctx.moveTo(x, -200); ctx.lineTo(x, 600); ctx.stroke();
-    }
-    for (let y = -200; y < 600; y += 30) {
-      ctx.beginPath(); ctx.moveTo(-400, y); ctx.lineTo(1400, y); ctx.stroke();
+    // Grade matricial técnica de pontos (Dotted Grid)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    for (let x = -400; x < 1400; x += 16) {
+      for (let y = -200; y < 600; y += 16) {
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
     }
 
     const { hopperX, scaleStartX, scaleEndX, cameraX, ejectorCX, ejectorBX, endConveyorX, conveyorY, conveyorHeight } = this.sim.layout;
 
     // 1. SILOS DE COLETA (Destinos A, B, C)
-    this.drawSilo(ctx, ejectorCX - 28, conveyorY + 60, 56, 80, 'SILO C (Rejeito)', '#ff1744', this.sim.silos.siloC.levelPercent, `LIT-703: ${this.sim.silos.siloC.levelPercent.toFixed(0)}%`, 'Grãos defeituosos');
-    this.drawSilo(ctx, ejectorBX - 28, conveyorY + 60, 56, 80, 'SILO B (Secundário)', '#ffb300', this.sim.silos.siloB.levelPercent, `${this.sim.silos.siloB.count} un`, 'Grãos toleráveis');
-    this.drawSilo(ctx, endConveyorX + 5, conveyorY + 30, 62, 110, 'SILO A (Aprovado)', '#00e676', (this.sim.silos.siloA.count % 100), `${this.sim.silos.siloA.count} un`, 'Padrão Premium');
+    this.drawSilo(ctx, ejectorCX - 28, conveyorY + 60, 56, 80, 'SILO C (Rejeito)', '#ff2222', this.sim.silos.siloC.levelPercent, `LIT-703: ${this.sim.silos.siloC.levelPercent.toFixed(0)}%`, `${this.sim.silos.siloC.count} un`);
+    this.drawSilo(ctx, ejectorBX - 28, conveyorY + 60, 56, 80, 'SILO B (Secundário)', '#ffaa00', this.sim.silos.siloB.levelPercent, `LIT-702: ${this.sim.silos.siloB.levelPercent.toFixed(0)}%`, `${this.sim.silos.siloB.count} un`);
+    this.drawSilo(ctx, endConveyorX + 5, conveyorY + 30, 62, 110, 'SILO A (Aprovado)', '#00c000', this.sim.silos.siloA.levelPercent, `LIT-701: ${this.sim.silos.siloA.levelPercent.toFixed(0)}%`, `${this.sim.silos.siloA.count} un`);
 
     // 2. FUNIL DE RECEPÇÃO & ALIMENTADOR VIBRATÓRIO
     this.drawHopper(ctx, hopperX, conveyorY - 145, 75, 115, this.sim.hopper.level, this.plc.outputs.c_ALIM);
@@ -456,10 +535,10 @@ export class SCADASystem {
     this.drawTrackingRuler(ctx, cameraX, ejectorCX, ejectorBX, conveyorY + conveyorHeight + 15);
 
     // 7. ESTAÇÃO 1: EJETOR PNEUMÁTICO C (FY-603 / ZSH-601)
-    this.drawEjectorStation(ctx, ejectorCX, conveyorY, this.sim.pneumatics.pistonStrokeC, this.sim.pneumatics.blowEffectC, this.plc.outputs.c_FY603, 'FY-603 (Ejetor C)', 'ZSH-601', '#ff1744', this.sim.pneumatics.isJammedC);
+    this.drawEjectorStation(ctx, ejectorCX, conveyorY, this.sim.pneumatics.pistonStrokeC, this.sim.pneumatics.blowEffectC, this.plc.outputs.c_FY603, 'FY-603 (Ejetor C)', 'ZSH-601', '#ff2222', false);
 
     // 8. ESTAÇÃO 2: EJETOR PNEUMÁTICO B (FY-602 / ZSH-602)
-    this.drawEjectorStation(ctx, ejectorBX, conveyorY, this.sim.pneumatics.pistonStrokeB, this.sim.pneumatics.blowEffectB, this.plc.outputs.c_FY602, 'FY-602 (Ejetor B)', 'ZSH-602', '#ffb300', this.sim.pneumatics.isJammedB);
+    this.drawEjectorStation(ctx, ejectorBX, conveyorY, this.sim.pneumatics.pistonStrokeB, this.sim.pneumatics.blowEffectB, this.plc.outputs.c_FY602, 'FY-602 (Ejetor B)', 'ZSH-602', '#ffaa00', false);
 
     // 9. GRÃOS EM TRÂNSITO
     this.drawGrains(ctx);
@@ -467,12 +546,12 @@ export class SCADASystem {
     ctx.restore();
 
     // --- INDICADOR DE ZOOM ATUAL NO CANTO ---
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-    ctx.fillRect(10, h - 22, 115, 16);
-    ctx.strokeStyle = '#1e293b';
-    ctx.strokeRect(10, h - 22, 115, 16);
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = '8.5px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(10, h - 22, 130, 16);
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeRect(10, h - 22, 130, 16);
+    ctx.fillStyle = '#00ff00';
+    ctx.font = 'bold 8.5px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(`ZOOM: ${(this.viewport.zoom * 100).toFixed(0)}% (Scroll / Drag)`, 14, h - 11);
   }
@@ -486,33 +565,34 @@ export class SCADASystem {
       { num: '5', title: 'Coleta & Silos', tag: 'Destinos A / B / C', x: 830 },
     ];
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.fillStyle = '#d4d0c8';
     ctx.fillRect(10, 6, w - 20, 28);
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(10, 6, w - 20, 28);
 
     for (let i = 0; i < steps.length; i++) {
       const s = steps[i];
-      ctx.fillStyle = '#0284c7';
+      ctx.fillStyle = '#000080';
       ctx.beginPath();
       ctx.arc(s.x - 38, 20, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px monospace';
+      ctx.font = 'bold 9px Tahoma, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(s.num, s.x - 38, 23);
 
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 9px Tahoma, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(s.title, s.x - 26, 16);
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = '#404040';
       ctx.font = '8px monospace';
       ctx.fillText(s.tag, s.x - 26, 26);
 
       if (i < steps.length - 1) {
-        ctx.fillStyle = '#475569';
-        ctx.font = '10px monospace';
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 10px Tahoma, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('➔', s.x + 85, 21);
       }
@@ -523,8 +603,8 @@ export class SCADASystem {
     const hw = w / 2;
     const chuteW = 20;
 
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#475569';
+    ctx.fillStyle = '#b0b8c0';
+    ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
 
     ctx.beginPath();
@@ -551,44 +631,48 @@ export class SCADASystem {
       ctx.closePath();
       ctx.clip();
 
-      ctx.fillStyle = '#d97706';
+      ctx.fillStyle = '#c88020';
       ctx.fillRect(x - hw, y + h - fillH, w, fillH);
       ctx.restore();
     }
 
     const vibOffset = isFeeding ? (Math.sin(performance.now() * 0.08) * 2.5) : 0;
-    ctx.fillStyle = isFeeding ? '#38bdf8' : '#64748b';
+    ctx.fillStyle = isFeeding ? '#00c000' : '#808080';
     ctx.fillRect(x - 15 + vibOffset, y + h + 2, 35, 6);
+    ctx.strokeRect(x - 15 + vibOffset, y + h + 2, 35, 6);
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 9px Tahoma, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('LIT-101', x, y + 16);
-    ctx.fillStyle = levelPercent < 15 ? '#ef4444' : '#94a3b8';
+    ctx.fillStyle = levelPercent < 15 ? '#c00000' : '#000000';
     ctx.fillText(`${levelPercent.toFixed(0)}% Nível`, x, y + 42);
 
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = '#000000';
     ctx.font = '8px monospace';
     ctx.fillText('c_ALIM', x, y + h + 18);
   }
 
   drawConveyor(ctx, x, y, len, h, speed, offset) {
-    ctx.fillStyle = '#1e293b';
+    ctx.fillStyle = '#808890';
     ctx.fillRect(x, y + h, len, 8);
+    ctx.strokeStyle = '#000000';
+    ctx.strokeRect(x, y + h, len, 8);
 
-    ctx.fillStyle = '#334155';
+    ctx.fillStyle = '#606870';
     for (let px = x + 30; px < x + len; px += 180) {
       ctx.fillRect(px, y + h + 8, 8, 45);
+      ctx.strokeRect(px, y + h + 8, 8, 45);
     }
 
-    ctx.fillStyle = '#0f172a';
+    ctx.fillStyle = '#303030';
     ctx.fillRect(x, y, len, h);
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
     ctx.strokeRect(x, y, len, h);
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
     for (let rx = x + (offset % 25); rx < x + len; rx += 25) {
       ctx.beginPath();
       ctx.moveTo(rx, y + 2);
@@ -596,16 +680,19 @@ export class SCADASystem {
       ctx.stroke();
     }
 
-    ctx.fillStyle = '#475569';
+    ctx.fillStyle = '#a0a8b0';
     ctx.beginPath();
     ctx.arc(x, y + h / 2, h / 2, 0, Math.PI * 2);
     ctx.arc(x + len, y + h / 2, h / 2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
 
-    ctx.fillStyle = this.sim.conveyor.isOverloaded ? '#ef4444' : (speed > 0 ? '#10b981' : '#64748b');
+    ctx.fillStyle = this.sim.conveyor.isOverloaded ? '#c00000' : (speed > 0 ? '#00c000' : '#808080');
     ctx.fillRect(x - 24, y + 2, 20, 26);
+    ctx.strokeStyle = '#000000';
+    ctx.strokeRect(x - 24, y + 2, 20, 26);
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 8px monospace';
+    ctx.font = 'bold 8px Tahoma, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('MOTOR', x - 14, y + 14);
     ctx.fillText('ST-201', x - 14, y + 23);
@@ -613,28 +700,31 @@ export class SCADASystem {
 
   drawScale(ctx, startX, endX, y, currentMassKg) {
     const len = endX - startX;
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+    ctx.fillStyle = '#c0c8d0';
     ctx.fillRect(startX, y - 4, len, 6);
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(startX, y - 4, len, 6);
 
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(startX + len / 2 - 12, y + 30, 24, 8);
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.moveTo(startX + 10, y + 2); ctx.lineTo(startX + 18, y + 12); ctx.lineTo(startX + 2, y + 12); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(endX - 10, y + 2); ctx.lineTo(endX - 2, y + 12); ctx.lineTo(endX - 18, y + 12); ctx.closePath(); ctx.fill();
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 9px Tahoma, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('WT-301 (Balança)', startX + len / 2, y + 48);
     ctx.font = '8px monospace';
-    ctx.fillText('➔ Gera FT-301 (kg/h)', startX + len / 2, y + 58);
-    ctx.fillStyle = '#e2e8f0';
-    ctx.fillText(`${(currentMassKg * 1000).toFixed(0)} g na esteira`, startX + len / 2, y - 10);
+    ctx.fillText('FT-301 (kg/h)', startX + len / 2, y + 58);
+    const massMg = Math.round(currentMassKg * 1000000);
+    ctx.fillText(`${massMg} mg na esteira`, startX + len / 2, y - 10);
   }
 
   drawVisionStation(ctx, x, y, camOk) {
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x - 25, y);
     ctx.lineTo(x - 25, y - 65);
@@ -642,13 +732,16 @@ export class SCADASystem {
     ctx.lineTo(x + 25, y);
     ctx.stroke();
 
-    ctx.fillStyle = camOk ? '#0284c7' : '#ef4444';
+    ctx.fillStyle = camOk ? '#c0c8c0' : '#e08080';
     ctx.fillRect(x - 14, y - 62, 28, 20);
+    ctx.strokeStyle = '#000000';
+    ctx.strokeRect(x - 14, y - 62, 28, 20);
 
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = '#101010';
     ctx.fillRect(x - 7, y - 42, 14, 5);
 
-    ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
+    // Iluminação estroboscópica
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
     ctx.beginPath();
     ctx.moveTo(x - 7, y - 37);
     ctx.lineTo(x + 7, y - 37);
@@ -657,17 +750,16 @@ export class SCADASystem {
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 9px Tahoma, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('KSA-401 (Câmera)', x, y - 72);
-    ctx.font = '8px monospace';
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('KSA-401', x, y - 72);
+    ctx.font = '8px Tahoma, sans-serif';
     ctx.fillText('Trigger XS-401', x, y - 24);
   }
 
   drawTrackingRuler(ctx, camX, ejCX, ejBX, y) {
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+    ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1;
     ctx.setLineDash([2, 3]);
     ctx.beginPath();
@@ -676,89 +768,79 @@ export class SCADASystem {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = '#00f0ff';
+    ctx.fillStyle = '#0000c0';
     ctx.beginPath(); ctx.arc(camX, y, 3, 0, Math.PI * 2); ctx.fill();
 
-    ctx.fillStyle = '#ff1744';
+    ctx.fillStyle = '#c00000';
     ctx.beginPath(); ctx.arc(ejCX, y, 3, 0, Math.PI * 2); ctx.fill();
 
-    ctx.fillStyle = '#ffb300';
+    ctx.fillStyle = '#d08000';
     ctx.beginPath(); ctx.arc(ejBX, y, 3, 0, Math.PI * 2); ctx.fill();
 
-    ctx.fillStyle = 'rgba(0, 240, 255, 0.7)';
-    ctx.font = '7.5px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 8px Tahoma, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('◄── Shift Register: Tracking via Encoder ST-201 ──►', (camX + ejBX) / 2, y + 10);
   }
 
   drawEjectorStation(ctx, x, y, stroke, blowEffect, isFiring, title, sensorTag, color, isJammed) {
-    ctx.fillStyle = isJammed ? '#7f1d1d' : '#334155';
+    ctx.fillStyle = isJammed ? '#e07070' : '#b0b8c0';
     ctx.fillRect(x - 12, y - 75, 24, 35);
-
-    ctx.strokeStyle = this.plc.inputs.p_PAL601 ? '#ef4444' : '#38bdf8';
+    ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
+    ctx.strokeRect(x - 12, y - 75, 24, 35);
+
     ctx.beginPath();
     ctx.moveTo(x, y - 75);
     ctx.lineTo(x, y - 95);
     ctx.stroke();
 
     const rodLength = 8 + stroke * 22;
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = '#404040';
     ctx.fillRect(x - 3, y - 40, 6, rodLength);
 
-    ctx.fillStyle = isFiring ? color : '#64748b';
-    ctx.fillRect(x - 8, y - 40 + rodLength, 16, 5);
-
-    const sensorActive = stroke > 0.85;
-    ctx.fillStyle = sensorActive ? '#00e676' : '#475569';
-    ctx.fillRect(x + 14, y - 55, 6, 9);
-
     if (blowEffect > 0) {
-      ctx.fillStyle = `rgba(0, 240, 255, ${blowEffect * 0.75})`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
       ctx.beginPath();
-      ctx.moveTo(x - 6, y - 35 + rodLength);
-      ctx.lineTo(x + 6, y - 35 + rodLength);
-      ctx.lineTo(x + 16, y + 38);
-      ctx.lineTo(x - 16, y + 38);
-      ctx.closePath();
+      ctx.arc(x, y - 40 + rodLength + 5, 8 + blowEffect * 6, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    ctx.fillStyle = color;
-    ctx.font = 'bold 8px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 8px Tahoma, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(title, x, y - 100);
-    ctx.font = '7.5px monospace';
-    ctx.fillStyle = sensorActive ? '#00e676' : '#94a3b8';
-    ctx.fillText(sensorTag, x + 24, y - 48);
+    ctx.fillText(title, x, y - 82);
+
+    ctx.fillStyle = isFiring ? '#00c000' : '#808080';
+    ctx.fillText(sensorTag, x, y - 100);
   }
 
   drawSilo(ctx, x, y, w, h, title, color, levelPercent, subtext, desc) {
-    ctx.fillStyle = '#1e293b';
+    ctx.fillStyle = '#b0b8c0';
     ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
 
     if (levelPercent > 0) {
       const fillH = (h - 6) * Math.min(1.0, levelPercent / 100);
       ctx.fillStyle = color;
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.5;
       ctx.fillRect(x + 3, y + h - 3 - fillH, w - 6, fillH);
       ctx.globalAlpha = 1.0;
     }
 
-    ctx.fillStyle = color;
-    ctx.font = 'bold 8px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 8px Tahoma, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(title, x + w / 2, y + 14);
 
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '8px monospace';
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 8px monospace';
     ctx.fillText(subtext, x + w / 2, y + 26);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '7px monospace';
+    ctx.fillStyle = '#404040';
+    ctx.font = '7px Tahoma, sans-serif';
     ctx.fillText(desc, x + w / 2, y + h - 6);
   }
 
@@ -775,8 +857,8 @@ export class SCADASystem {
       ctx.fill();
 
       if (g.classifiedCategory) {
-        ctx.strokeStyle = g.classifiedCategory === 'A' ? '#00e676' : g.classifiedCategory === 'B' ? '#ffb300' : '#ff1744';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = g.classifiedCategory === 'A' ? '#00c000' : g.classifiedCategory === 'B' ? '#ffaa00' : '#c00000';
+        ctx.lineWidth = 1.2;
         ctx.stroke();
       }
     }
@@ -786,17 +868,24 @@ export class SCADASystem {
     const plantStatusBadge = document.getElementById('plantStatusBadge');
     if (plantStatusBadge) {
       if (this.plc.inputs.p_EMERG) {
-        plantStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-950 text-red-400 border border-red-700 animate-pulse';
+        plantStatusBadge.className = 'px-2 py-0.5 text-[11px] font-bold font-sans bg-[#d32f2f] text-white border-2 border-[#800000]';
         plantStatusBadge.innerText = '● PARADA DE EMERGÊNCIA (XA-901 ATUADA)';
       } else if (!this.plc.outputs.c_PERM) {
-        plantStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-400 border border-amber-700';
+        plantStatusBadge.className = 'px-2 py-0.5 text-[11px] font-bold font-sans bg-[#ffaa00] text-black border-2 border-[#805000]';
         plantStatusBadge.innerText = '● INTERTRAVADO (VERIFIQUE FALHAS)';
+      } else if (this.plc.inputs.p_STANDBY) {
+        const isSilo = this.plc.inputs.p_NC701 || this.plc.inputs.p_NC702 || this.plc.inputs.p_NC703;
+        plantStatusBadge.className = 'px-2 py-0.5 text-[11px] font-bold font-sans bg-[#204060] text-white border-2 border-[#102030]';
+        plantStatusBadge.innerText = isSilo ? '● STANDBY (SILO CHEIO / PURGA CONCLUÍDA)' : '● STANDBY (FUNIL VAZIO / PURGA CONCLUÍDA)';
+      } else if (!this.plc.outputs.c_ALIM && (this.plc.inputs.p_NC701 || this.plc.inputs.p_NC702 || this.plc.inputs.p_NC703) && this.sim.conveyor.actualSpeed > 0) {
+        plantStatusBadge.className = 'px-2 py-0.5 text-[11px] font-bold font-sans bg-[#ffaa00] text-black border-2 border-[#805000]';
+        plantStatusBadge.innerText = '● PURGANDO ESTEIRA (SILO CHEIO)';
       } else if (this.sim.conveyor.actualSpeed > 0) {
-        plantStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-700';
+        plantStatusBadge.className = 'px-2 py-0.5 text-[11px] font-bold font-sans bg-[#00c000] text-white border-2 border-[#005000]';
         plantStatusBadge.innerText = '● EM OPERAÇÃO NORMAL';
       } else {
-        plantStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-cyan-950 text-cyan-400 border border-cyan-700';
-        plantStatusBadge.innerText = '● PRONTO / AGUARDANDO START';
+        plantStatusBadge.className = 'px-2 py-0.5 text-[11px] font-bold font-sans bg-[#e2dfd7] text-[#006400] border-2 border-[#808080]';
+        plantStatusBadge.innerText = '● PRONTO / AGUARDANDO COMANDO';
       }
     }
 
@@ -842,13 +931,13 @@ export class SCADASystem {
     }
 
     container.innerHTML = this.sim.trackingQueue.slice(0, 6).map(item => `
-      <div class="flex items-center justify-between text-[10px] font-mono py-0.5 px-1.5 rounded bg-slate-950 border border-slate-800">
+      <div class="flex items-center justify-between text-[10px] font-mono py-0.5 px-1.5 rounded bg-[#111722] border border-[#283344]">
         <span class="text-slate-400">#${item.id}</span>
         <span class="font-bold ${
           item.category === 'A' ? 'text-emerald-400' : item.category === 'B' ? 'text-amber-400' : 'text-red-400'
         }">Cat ${item.category}</span>
-        <span class="text-cyan-400">${item.x}px</span>
-        <span class="text-slate-300 font-bold">${item.category !== 'A' ? '⏱ ' + item.timeToTarget + 's p/ disparo' : '➔ Fim de linha'}</span>
+        <span class="text-slate-300">${item.x}px</span>
+        <span class="text-slate-400 font-bold">${item.category !== 'A' ? '⏱ ' + item.timeToTarget + 's p/ disparo' : '➔ Silo A'}</span>
       </div>
     `).join('');
   }
@@ -862,9 +951,9 @@ export class SCADASystem {
     const el = document.getElementById(id);
     if (!el) return;
     if (isAlarmType) {
-      el.className = `w-2.5 h-2.5 rounded-full ${state ? 'bg-red-500 shadow-[0_0_8px_#ef4444]' : 'bg-slate-700'}`;
+      el.className = `pilot-lamp ${state ? 'on-red' : 'off'}`;
     } else {
-      el.className = `w-2.5 h-2.5 rounded-full ${state ? 'bg-emerald-400 shadow-[0_0_8px_#10b981]' : 'bg-slate-700'}`;
+      el.className = `pilot-lamp ${state ? 'on-green' : 'off'}`;
     }
   }
 }

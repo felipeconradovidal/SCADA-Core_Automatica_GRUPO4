@@ -1,103 +1,512 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;500;600;700&display=swap');
+/* ==========================================================================
+   SCADA-CORE AUTOMÁTICA - SISTEMA DE DESIGN SCADA INDUSTRIAL CLÁSSICO
+   Referência Direta: Siemens WinCC / Wonderware InTouch / Citect (Imagem de Referência 2)
+   - Fundo do Chassi e Molduras: Cinza de Painel Industrial (#d4d0c8 / #c0c0c0)
+   - Fundo do Sinótico do Processo: Verde-Ardósia / Teal Industrial (#4d7373)
+   - Bordas em Relevo 3D Chanfrado (Beveled 3D: Raised e Sunken)
+   - Displays Digitais (IO Fields): Caixa preta rebaixada com texto verde fosforescente (#00ff00) ou amarelo (#ffff00)
+   - Botoeiras Clássicas: Relevo 3D tátil (Windows clássico / WinCC)
+   - Linha de Alarmes: Faixa preta com texto vermelho vivo (#ff2020)
+   ========================================================================== */
 
 :root {
-  --bg-main: #090e17;
-  --panel-bg: #0f172a;
-  --panel-border: #1e293b;
-  --accent-cyan: #00f0ff;
-  --accent-emerald: #00e676;
-  --accent-amber: #ffb300;
-  --accent-red: #ff1744;
+  /* Paleta Base SCADA Clássico */
+  --scada-chassis: #d4d0c8;        /* Cinza neutro de chassi */
+  --scada-chassis-light: #ffffff;  /* Aresta iluminada 3D */
+  --scada-chassis-mid: #ece9d8;    /* Cinza claro intermediário */
+  --scada-chassis-shadow: #808080; /* Sombra cinza média 3D */
+  --scada-chassis-dark: #404040;   /* Aresta escura 3D */
+  --scada-canvas-bg: #4d7373;      /* Teal / Verde-ardósia clássico do sinótico */
+  --scada-canvas-border: #283e3e;  /* Contorno escuro da área de processo */
+
+  /* Cores de Sinalização e Processo */
+  --scada-display-bg: #000000;
+  --scada-display-green: #00ff00;
+  --scada-display-yellow: #ffff00;
+  --scada-display-red: #ff2222;
+  --scada-display-white: #ffffff;
+  --scada-display-cyan: #00ffff;
+
+  --scada-btn-green: #a3d9a5;      /* Botão verde claro (Imagem 2) */
+  --scada-btn-yellow: #ffff80;     /* Botão amarelo claro (Imagem 2) */
+  --scada-btn-red: #ff7777;        /* Botão vermelho claro (Imagem 2) */
+  --scada-btn-blue: #99bbff;
+
+  --scada-pipe-fill: #dcdcdc;      /* Tubulações espessas cinza-prata */
+  --scada-pipe-stroke: #000000;    /* Contorno preto sólido de 2px */
+
+  --scada-text-main: #000000;
+  --scada-text-muted: #404040;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--bg-main);
-  color: #f1f5f9;
+  font-family: 'Segoe UI', Tahoma, Arial, Helvetica, sans-serif;
+  background-color: var(--scada-chassis);
+  color: var(--scada-text-main);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
   user-select: none;
+  -webkit-font-smoothing: antialiased;
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #090e17;
-}
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+/* ==========================================================================
+   MOLDURAS E RELEVOS 3D CHANFRADOS (BEVELS CLÁSSICOS WINCC / INTOUCH)
+   ========================================================================== */
+.bevel-raised {
+  border-top: 2px solid var(--scada-chassis-light);
+  border-left: 2px solid var(--scada-chassis-light);
+  border-right: 2px solid var(--scada-chassis-dark);
+  border-bottom: 2px solid var(--scada-chassis-dark);
+  background-color: var(--scada-chassis);
 }
 
-/* Painéis Industriais */
+.bevel-sunken {
+  border-top: 2px solid var(--scada-chassis-dark);
+  border-left: 2px solid var(--scada-chassis-dark);
+  border-right: 2px solid var(--scada-chassis-light);
+  border-bottom: 2px solid var(--scada-chassis-light);
+  background-color: var(--scada-chassis);
+}
+
+.bevel-ridge {
+  border: 2px ridge var(--scada-chassis);
+}
+
+.bevel-groove {
+  border: 2px groove var(--scada-chassis);
+}
+
+/* Painel SCADA com Moldura e Relevo 3D */
 .scada-panel {
-  background: var(--panel-bg);
-  border: 1px solid var(--panel-border);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  border-radius: 8px;
+  background: var(--scada-chassis);
+  border-top: 2px solid var(--scada-chassis-light);
+  border-left: 2px solid var(--scada-chassis-light);
+  border-right: 2px solid var(--scada-chassis-dark);
+  border-bottom: 2px solid var(--scada-chassis-dark);
+  box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px var(--scada-chassis-shadow);
+  padding: 4px;
+}
+
+.panel-header {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  padding: 3px 8px;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.panel-header.panel-header-gray {
+  background: var(--scada-chassis);
+  color: #000000;
+  border-bottom: 1px solid var(--scada-chassis-shadow);
+}
+
+/* Sub-card com fundo rebaixado */
+.scada-card-inset {
+  background: #e2dfd7;
+  border-top: 1px solid var(--scada-chassis-shadow);
+  border-left: 1px solid var(--scada-chassis-shadow);
+  border-right: 1px solid var(--scada-chassis-light);
+  border-bottom: 1px solid var(--scada-chassis-light);
+  padding: 4px;
+}
+
+/* ==========================================================================
+   DISPLAYS DIGITAIS DE LEITURA (IO FIELDS CLÁSSICOS EM CAIXA PRETA)
+   ========================================================================== */
+.scada-io-field {
+  background-color: var(--scada-display-bg);
+  border-top: 2px solid var(--scada-chassis-dark);
+  border-left: 2px solid var(--scada-chassis-dark);
+  border-right: 2px solid var(--scada-chassis-light);
+  border-bottom: 2px solid var(--scada-chassis-light);
+  color: var(--scada-display-green);
+  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 2px 6px;
+  text-align: right;
+  display: inline-block;
+  min-width: 60px;
+  line-height: 1.2;
+}
+
+.scada-io-field.yellow {
+  color: var(--scada-display-yellow);
+}
+
+.scada-io-field.red {
+  color: var(--scada-display-red);
+}
+
+.scada-io-field.white {
+  color: var(--scada-display-white);
+}
+
+.scada-io-field.cyan {
+  color: var(--scada-display-cyan);
+}
+
+/* ==========================================================================
+   BOTOEIRAS E CONTROLES INDUSTRIAIS TÁTEIS (PADRÃO WINCC / INTOUCH)
+   ========================================================================== */
+.btn-classic {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000000;
+  background-color: var(--scada-chassis);
+  border-top: 2px solid var(--scada-chassis-light);
+  border-left: 2px solid var(--scada-chassis-light);
+  border-right: 2px solid var(--scada-chassis-dark);
+  border-bottom: 2px solid var(--scada-chassis-dark);
+  box-shadow: inset 1px 1px 0px #ffffff, inset -1px -1px 0px var(--scada-chassis-shadow);
+  padding: 4px 10px;
+  cursor: pointer;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  user-select: none;
+  text-decoration: none;
+}
+
+.btn-classic:active, .btn-classic.active {
+  border-top: 2px solid var(--scada-chassis-dark);
+  border-left: 2px solid var(--scada-chassis-dark);
+  border-right: 2px solid var(--scada-chassis-light);
+  border-bottom: 2px solid var(--scada-chassis-light);
+  box-shadow: inset 1px 1px 0px var(--scada-chassis-shadow);
+  padding: 5px 9px 3px 11px;
+}
+
+/* Variações de cor dos botões da Imagem de Referência */
+.btn-classic-green {
+  background-color: var(--scada-btn-green);
+}
+.btn-classic-green:active, .btn-classic-green.active {
+  background-color: #8acb8d;
+}
+
+.btn-classic-yellow {
+  background-color: var(--scada-btn-yellow);
+}
+.btn-classic-yellow:active, .btn-classic-yellow.active {
+  background-color: #e6e670;
+}
+
+.btn-classic-red {
+  background-color: var(--scada-btn-red);
+}
+.btn-classic-red:active, .btn-classic-red.active {
+  background-color: #e65555;
+}
+
+/* Botão de Parada de Emergência NR-12 com anel amarelo */
+.btn-classic-emergency {
+  background-color: #d32f2f;
+  color: #ffffff;
+  border-top: 3px solid #ff6666;
+  border-left: 3px solid #ff6666;
+  border-right: 3px solid #800000;
+  border-bottom: 3px solid #800000;
+  outline: 3px solid #ffeb3b; /* Anel amarelo clássico NR-12 */
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.btn-classic-emergency:active {
+  border-top: 3px solid #800000;
+  border-left: 3px solid #800000;
+  border-right: 3px solid #ff6666;
+  border-bottom: 3px solid #ff6666;
+  background-color: #b71c1c;
+}
+
+/* Bloquinhos ON / OFF clássicos (como na Imagem 2 nas bombas e válvulas) */
+.state-block {
+  display: inline-block;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-top: 1px solid var(--scada-chassis-light);
+  border-left: 1px solid var(--scada-chassis-light);
+  border-right: 1px solid var(--scada-chassis-dark);
+  border-bottom: 1px solid var(--scada-chassis-dark);
+  min-width: 26px;
+  text-align: center;
+}
+
+.state-block.on-active {
+  background-color: #00c000;
+  color: #ffffff;
+}
+
+.state-block.on-inactive {
+  background-color: #b0c4b0;
+  color: #607060;
+}
+
+.state-block.off-active {
+  background-color: #c00000;
+  color: #ffffff;
+}
+
+.state-block.off-inactive {
+  background-color: #d8b8b8;
+  color: #705050;
+}
+
+/* ==========================================================================
+   BARRA DE ALARMES DE RODAPÉ (COMO NA IMAGEM DE REFERÊNCIA 2)
+   ========================================================================== */
+.scada-alarm-ribbon {
+  background-color: var(--scada-display-bg);
+  border-top: 2px solid var(--scada-chassis-dark);
+  border-left: 2px solid var(--scada-chassis-dark);
+  border-right: 2px solid var(--scada-chassis-light);
+  border-bottom: 2px solid var(--scada-chassis-light);
+  color: var(--scada-display-red);
+  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.scada-alarm-ribbon.normal {
+  color: #00dd00;
+}
+
+.scada-alarm-ribbon.critical {
+  color: #ff3333;
+  animation: alarmTextBlink 0.8s infinite;
+}
+
+.scada-alarm-ribbon.high {
+  color: #ffaa00;
+}
+
+@keyframes alarmTextBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ==========================================================================
+   NAVEGAÇÃO DE TELAS SCADA (ABAS CHANFRADAS WINCC)
+   ========================================================================== */
+.scada-tab-bar {
+  background-color: var(--scada-chassis);
+  border-bottom: 2px solid var(--scada-chassis-dark);
+  display: flex;
+  align-items: flex-end;
+  padding: 4px 6px 0 6px;
+  gap: 3px;
+}
+
+.scada-tab-btn {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000000;
+  background-color: #c4c0b8;
+  border-top: 2px solid var(--scada-chassis-light);
+  border-left: 2px solid var(--scada-chassis-light);
+  border-right: 2px solid var(--scada-chassis-dark);
+  border-bottom: none;
+  padding: 5px 12px;
+  cursor: pointer;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   position: relative;
+  bottom: -2px;
 }
 
-.scada-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+.scada-tab-btn:hover {
+  background-color: var(--scada-chassis);
 }
 
-/* Botões Industriais */
-.btn-industrial {
-  transition: all 0.15s ease-in-out;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-}
-.btn-industrial:active {
-  transform: scale(0.96);
-}
-
-.btn-emergency {
-  background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
-  border: 2px solid #ef4444;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-}
-.btn-emergency.active {
-  background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
-  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.8), 0 0 25px rgba(239, 68, 68, 0.8);
-  border-color: #ff1744;
+.scada-tab-btn.active {
+  background-color: var(--scada-chassis);
+  border-top: 2px solid var(--scada-chassis-light);
+  border-left: 2px solid var(--scada-chassis-light);
+  border-right: 2px solid var(--scada-chassis-dark);
+  border-bottom: 2px solid var(--scada-chassis);
+  padding: 7px 14px 6px 14px;
+  z-index: 2;
+  color: #000080;
 }
 
-/* Interruptores de Falha */
-.fault-switch input:checked + label {
-  background-color: #ef4444;
-  border-color: #f87171;
-}
-.fault-switch input:checked + label::after {
-  transform: translateX(100%);
-  background-color: #ffffff;
+/* ==========================================================================
+   ÁREA DO SINÓTICO DO PROCESSO (TEAL-ARDÓSIA IMAGEM 2)
+   ========================================================================== */
+.scada-canvas-viewport {
+  background-color: var(--scada-canvas-bg);
+  border-top: 3px solid var(--scada-chassis-dark);
+  border-left: 3px solid var(--scada-chassis-dark);
+  border-right: 3px solid var(--scada-chassis-light);
+  border-bottom: 3px solid var(--scada-chassis-light);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-/* Leds e Indicadores */
-.led-glow-green {
-  box-shadow: 0 0 8px #00e676;
+/* ==========================================================================
+   LÂMPADAS PILOTO CLÁSSICAS
+   ========================================================================== */
+.pilot-lamp {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #404040;
+  box-shadow: inset 1px 1px 1px rgba(255,255,255,0.8), inset -1px -1px 1px rgba(0,0,0,0.5);
+  display: inline-block;
+  vertical-align: middle;
 }
-.led-glow-red {
-  box-shadow: 0 0 8px #ff1744;
+
+.pilot-lamp.off {
+  background-color: #808080;
 }
-.led-glow-amber {
-  box-shadow: 0 0 8px #ffb300;
+
+.pilot-lamp.on-green {
+  background-color: #00e000;
+  box-shadow: inset 1px 1px 2px #fff, inset -1px -1px 2px #005000;
+}
+
+.pilot-lamp.on-red {
+  background-color: #e00000;
+  box-shadow: inset 1px 1px 2px #fff, inset -1px -1px 2px #500000;
+}
+
+.pilot-lamp.on-amber {
+  background-color: #ffaa00;
+  box-shadow: inset 1px 1px 2px #fff, inset -1px -1px 2px #805000;
+}
+
+/* ==========================================================================
+   FACEPLATE MODAL (JANELA CLÁSSICA WINDOWS / WINCC)
+   ========================================================================== */
+.faceplate-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.faceplate-window {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--scada-chassis);
+  border-top: 3px solid var(--scada-chassis-light);
+  border-left: 3px solid var(--scada-chassis-light);
+  border-right: 3px solid var(--scada-chassis-dark);
+  border-bottom: 3px solid var(--scada-chassis-dark);
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.faceplate-titlebar {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+  color: #ffffff;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.faceplate-tabs {
+  background: var(--scada-chassis);
+  border-bottom: 2px solid var(--scada-chassis-dark);
+  display: flex;
+  padding: 4px 4px 0 4px;
+  gap: 2px;
+}
+
+.fp-tab-btn {
+  flex: 1;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000000;
+  background: #c4c0b8;
+  border-top: 2px solid var(--scada-chassis-light);
+  border-left: 2px solid var(--scada-chassis-light);
+  border-right: 2px solid var(--scada-chassis-dark);
+  border-bottom: none;
+  padding: 4px 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.fp-tab-btn.active {
+  background: var(--scada-chassis);
+  border-bottom: 2px solid var(--scada-chassis);
+  color: #000080;
+  position: relative;
+  bottom: -2px;
+}
+
+/* ==========================================================================
+   TABELAS TÉCNICAS CLÁSSICAS
+   ========================================================================== */
+.table-industrial {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 11px;
+}
+
+.table-industrial th {
+  background: #c4c0b8;
+  color: #000000;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-top: 1px solid var(--scada-chassis-light);
+  border-left: 1px solid var(--scada-chassis-light);
+  border-right: 1px solid var(--scada-chassis-dark);
+  border-bottom: 1px solid var(--scada-chassis-dark);
+  text-align: left;
+}
+
+.table-industrial td {
+  padding: 3px 8px;
+  border: 1px solid #b0aca4;
+  color: #000000;
+  background: #f4f2ee;
+}
+
+.table-industrial tr:nth-child(even) td {
+  background: #e8e5de;
 }

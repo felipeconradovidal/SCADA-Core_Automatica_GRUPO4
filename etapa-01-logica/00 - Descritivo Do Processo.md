@@ -102,11 +102,12 @@ Após a etapa de ejeção, os grãos devidamente separados seguem para os seus r
 * Grãos descartados, ejetados pelo segundo bocal (**FY-603**), são direcionados à calha e reservatório de **Rejeito (Categoria C)**.
 * Grãos aprovados permanecem sobre a esteira e são depositados por gravidade ao final do percurso no reservatório principal (**Categoria A**).
 
-Ambos os recipientes de desvio exigem monitoramento contínuo para prevenir extravasamento e sobreenchimento sobre a área de processo:
+Todos os três recipientes de coleta exigem monitoramento contínuo para prevenir extravasamento e sobreenchimento sobre a área de processo:
+* O reservatório de Categoria A é monitorado pelo transmissor ultrassônico **LIT-701** (gerando alerta de nível alto **p_NA701** e bloqueio crítico **p_NC701**).
 * O reservatório de Categoria B é monitorado pelo transmissor ultrassônico **LIT-702** (gerando alerta de nível alto **p_NA702** e bloqueio crítico **p_NC702**).
 * O reservatório de Categoria C é monitorado pelo transmissor ultrassônico **LIT-703** (gerando alerta de nível alto **p_NA703** e bloqueio crítico **p_NC703**).
 
-À medida que os recipientes são preenchidos, os valores medidos crescem de 0 a 100%. Ao atingirem 80-90%, o SCADA emite avisos ao operador para preparação da troca de caçambas. Caso a capacidade máxima (95-100%) seja atingida sem substituição, o CLP desarma preventivamente a alimentação vibratória (`c_ALIM = 0`) através do intertravamento geral (`c_PERM`), interrompendo o fluxo de produto antes de qualquer transbordo.
+À medida que os recipientes são preenchidos, os valores medidos crescem de 0 a 100%. Ao atingirem 80-90%, o SCADA emite avisos ao operador para preparação da troca de caçambas ou esvaziamento. Caso a capacidade máxima (≥ 95-99%) de qualquer um dos silos seja atingida sem substituição (**p_SILO_CHEIO** = 1), ou o funil receptor atinja nível baixo (**p_NB101** = 1), o CLP desarma preventivamente o alimentador vibratório (`c_ALIM = 0`). A esteira transportadora permanece temporariamente em movimento para evacuar todos os grãos já dosados (*cascading cleanout*); após a purga completa e sem carga por 2 segundos, o sistema comuta para modo **Standby Automático** (`p_STANDBY = 1`), desligando suavemente o motor da esteira (`c_EST = 0`) para economizar energia e eliminar desgaste desnecessário.
 
 ---
 
@@ -116,9 +117,9 @@ O sistema de supervisão e aquisição de dados (SCADA) atua como o ambiente cen
 
 Através do SCADA, o operador monitora em tempo real:
 
-* **Estado Geral da Planta:** por meio da variável **Permissão Geral de Operação (Intertravamento do CLP)**, que indica se as condições de segurança (emergência, pressão de ar **PAL-601**, motor da esteira **JI-201**, visão **KSA-401** e níveis dos silos **NC702/NC703**) estão satisfeitas para permitir a operação da planta (Estado 1).
-* **Fluxo de Processamento:** visualização gráfica do nível do funil (**LIT-101**), velocidade da esteira (**ST-201**), massa instantânea na balança (**WT-301**) e taxa de vazão mássica em tempo real (**FT-301**).
-* **Diagnóstico e Alarmes:** exibição em painel de eventos de falhas elétricas por sobrecarga no motor (**JI-201** = 1), baixa pressão na linha pneumática (**PAL-601** = 1), falhas nos atuadores ejetores (**FY-602** / **FY-603**) e necessidade de intervenção nos recipientes (**LIT-702** / **LIT-703**).
+* **Estado Geral da Planta:** por meio da variável **Permissão Geral de Operação (Intertravamento do CLP)**, que indica se as condições de segurança (emergência, pressão de ar **PAL-601**, motor da esteira **JI-201**, visão **KSA-401** e níveis dos silos **NC701/NC702/NC703**) estão satisfeitas para permitir a operação da planta (Estado 1).
+* **Fluxo de Processamento:** visualização gráfica do nível do funil (**LIT-101**), velocidade da esteira (**ST-201**), massa instantânea na balança (**WT-301**), taxa de vazão mássica em tempo real (**FT-301**) e status de Standby / Purga.
+* **Diagnóstico e Alarmes:** exibição em painel de eventos de falhas elétricas por sobrecarga no motor (**JI-201** = 1), baixa pressão na linha pneumática (**PAL-601** = 1), falhas nos atuadores ejetores (**FY-602** / **FY-603**) e necessidade de intervenção nos recipientes (**LIT-701** / **LIT-702** / **LIT-703**).
 * **Métricas de Produtividade e Qualidade:** apresentação da variável calculada **Taxa de Rejeição Total (SCADA)** e rendimento por categoria (Aprovado, Secundário e Rejeitado), possibilitando acompanhamento contínuo dos lotes de matéria-prima.
 
 O SCADA armazena o histórico contínuo das variáveis em banco de dados, possibilitando a geração de relatórios de produção, gráficos de tendência e rastreabilidade da operação do sistema.
@@ -131,9 +132,9 @@ O funcionamento integrado da planta automatizada segue uma sequência encadeada 
 
 1. **Abastecimento Inicial:** Os grãos chegam à planta e são despejados no funil de recepção. O transmissor **LIT-101** registra o nível de produto armazenado.
 
-2. **Verificação de Permissões:** O operador solicita a partida da planta via SCADA. O CLP valida a **Permissão Geral de Operação (Intertravamento)**, verificando se não há emergências ativas, se o motor da esteira está íntegro (**JI-201** = 0), se a pressão de ar está normal (**PAL-601** = 0), se a câmera está operacional (**KSA-401** = 1) e se nenhum silo de coleta está saturado (**p_NC702** = 0 e **p_NC703** = 0).
+2. **Verificação de Permissões:** O operador solicita a partida da planta via SCADA. O CLP valida a **Permissão Geral de Operação (Intertravamento)**, verificando se não há emergências ativas, se o motor da esteira está íntegro (**JI-201** = 0), se a pressão de ar está normal (**PAL-601** = 0), se a câmera está operacional (**KSA-401** = 1) e se nenhum silo de coleta está saturado (**p_NC701** = 0, **p_NC702** = 0 e **p_NC703** = 0).
 
-3. **Partida do Transporte e Alimentação:** A esteira transportadora é acionada, e sua velocidade real é monitorada continuamente pelo encoder **ST-201**. Em seguida, o **Comando do Alimentador Vibratório** é ativado, iniciando a dosagem controlada e contínua dos grãos sobre a esteira em movimento.
+3. **Partida do Transporte e Alimentação:** A esteira transportadora é acionada (`c_EST` = 1), e sua velocidade real é monitorada continuamente pelo encoder **ST-201**. Em seguida, o **Comando do Alimentador Vibratório** (`c_ALIM` = 1) é ativado, iniciando a dosagem controlada e contínua dos grãos sobre a esteira em movimento.
 
 4. **Pesagem Dinâmica:** Os grãos avançam sobre a esteira e passam pela mesa de pesagem. A célula de carga **WT-301** mede a massa instantânea, e o CLP calcula continuamente a vazão mássica de processamento **FT-301**, disponibilizando o dado no SCADA.
 
@@ -145,9 +146,9 @@ O funcionamento integrado da planta automatizada segue uma sequência encadeada 
    * Na posição do bocal B (`p_POS602`), se **KXA-502** = 1 e ar OK, o CLP aciona a válvula **FY-602** e o sensor **ZSH-602** confirma o avanço.
    * Na posição do bocal C (`p_POS603`), se **KXA-503** = 1 e ar OK, o CLP aciona a válvula **FY-603** e o sensor **ZSH-601** confirma o avanço.
 
-8. **Coleta e Monitoramento de Silos:** Os grãos secundários são recolhidos no recipiente B (**LIT-702**), os grãos rejeitados caem no recipiente C (**LIT-703**), e os grãos de qualidade nobre A permanecem na esteira até descarregarem no silo principal.
+8. **Coleta e Monitoramento de Silos:** Os grãos aprovados são coletados no Silo A (**LIT-701**), os secundários no Silo B (**LIT-702**) e os rejeitados no Silo C (**LIT-703**). Todos os silos possuem monitoramento de volume e alarme de nível crítico com bloqueio de alimentação.
 
-9. **Supervisão Contínua:** Durante todo o percurso, o SCADA atualiza as variáveis do sinóptico e processa as taxas de rendimento e descarte, garantindo controle, diagnóstico e rastreabilidade total do processo.
+9. **Supervisão Contínua e Ciclo de Purga:** Durante todo o percurso, o SCADA atualiza as variáveis do sinóptico. Em caso de desabastecimento do funil ou saturação de qualquer silo, o CLP corta a alimentação, purga os grãos restantes na esteira e entra em Standby automático até o reabastecimento ou drenagem dos silos.
 
 ---
 

@@ -19,7 +19,7 @@ O escopo integrador unifica três pilares fundamentais:
 ```mermaid
 flowchart TD
     subgraph Campo ["1. Camada de Instrumentação & Campo (ISA 5.1)"]
-        S_AN["Transmissores Analógicos 4-20mA\n(LIT-101, ST-201, WT-301, PT-601, LIT-702, LIT-703)"]
+        S_AN["Transmissores Analógicos 4-20mA\n(LIT-101, ST-201, WT-301, PT-601, LIT-701, LIT-702, LIT-703)"]
         S_DIG["Sensores Discretos e Atuadores\n(XA-901, JI-201, XS-401, KSA-401, ZSH-602, ZSH-601)"]
     end
 
@@ -112,6 +112,7 @@ O mapeamento contínuo-discreto converte a grandeza física $y_x$ em proposiçõ
 | **WT-301** | Célula de Carga (Balança Dinâmica) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 50.0\text{ kg}$ | $p_{\text{SOBRE\_WT}}$ (Sobrecarga de Massa)<br>$p_{\text{TARA\_WT}}$ (Massa Residual) | $p_{\text{SOBRE\_WT}} \iff y > 45.0\text{ kg}$<br>$p_{\text{TARA\_WT}} \iff (y > 0.50\text{ kg} \land \neg c_{\text{ALIM}})$ |
 | **FT-301** | Vazão Mássica Calculada ($Q_m = \Delta m / \Delta t$) | N/A (Calculada) | $0.0 \dots 1000.0\text{ kg/h}$ | $p_{\text{VAZAO\_NULA}}$ (Sem fluxo de produto) | $p_{\text{VAZAO\_NULA}} \iff y < 10.0\text{ kg/h}$ |
 | **PT-601** | Transmissor Piezoelétrico (Linha de Ar) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 10.0\text{ bar}$ | $p_{\text{PAL601}}$ (Pressão Pneumática Baixa) | $p_{\text{PAL601}} \iff y < 6.0\text{ bar}$ |
+| **LIT-701** | Transmissor Ultrassônico (Silo Principal A) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 100.0\text{ \%}$ | $p_{\text{NA701}}$ (Silo A Quase Cheio)<br>$p_{\text{NC701}}$ (Silo A Saturado/Crítico) | $p_{\text{NA701}} \iff y \ge 90.0\%$<br>$p_{\text{NC701}} \iff y \ge 99.0\%$ |
 | **LIT-702** | Transmissor Ultrassônico (Silo Secundário B) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 100.0\text{ \%}$ | $p_{\text{NA702}}$ (Silo B Quase Cheio)<br>$p_{\text{NC702}}$ (Silo B Saturado/Crítico) | $p_{\text{NA702}} \iff y \ge 80.0\%$<br>$p_{\text{NC702}} \iff y \ge 95.0\%$ |
 | **LIT-703** | Transmissor Ultrassônico (Silo Rejeito C) | $4.0 \dots 20.0\text{ mA}$ | $0.0 \dots 100.0\text{ \%}$ | $p_{\text{NA703}}$ (Silo C Quase Cheio)<br>$p_{\text{NC703}}$ (Silo C Saturado/Crítico) | $p_{\text{NA703}} \iff y \ge 80.0\%$<br>$p_{\text{NC703}} \iff y \ge 95.0\%$ |
 | **XA-901** | Botoeira de Emergência (Tipo Cogumelo) | Discreto (24VDC) | Binário $\{0, 1\}$ | $p_{\text{EMERG}}$ (Parada de Emergência Ativa) | $p_{\text{EMERG}} = 1$ quando contato aberto |
@@ -133,7 +134,7 @@ Na Engenharia de Automação, o **motor de intertravamento** constitui a barreir
 Definimos as seguintes premissas axiomáticas ($\Gamma$) que governam o comportamento do CLP:
 
 $$\begin{aligned}
-\text{Axioma 1 (Trip Geral):} \quad & \text{Trip}_{\text{GERAL}} \iff \Big( p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}} \lor \bigvee_{x} \text{FalhaLaço}(x) \Big) \\
+\text{Axioma 1 (Trip Geral):} \quad & \text{Trip}_{\text{GERAL}} \iff \Big( p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC701}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}} \lor \bigvee_{x} \text{FalhaLaço}(x) \Big) \\
 \text{Axioma 2 (Permissivo Geral):} \quad & c_{\text{PERM}} \iff \neg \text{Trip}_{\text{GERAL}} \\
 \text{Axioma 3 (Alimentador Vibratório):} \quad & c_{\text{ALIM}} \iff (c_{\text{PERM}} \land p_{\text{MOV201}} \land \neg p_{\text{NB101}}) \\
 \text{Axioma 4A (Válvula Ejetora B):} \quad & c_{\text{FY602}} \iff (p_B \land p_{\text{POS602}} \land \neg p_{\text{PAL601}}) \\
@@ -285,6 +286,7 @@ $$\begin{aligned}
 \mathcal{R}_{10} &: (p_{\text{PAL601}}) \implies \text{CausaRaiz}(\text{Queda Crítica de Pressão Pneumática Principal (< 6.0 bar)}) \\
 \mathcal{R}_{11A} &: (c_{\text{FY602}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH602}}) \implies \text{CausaRaiz}(\text{Falha no Atuador Pneumático FY-602 / Cilindro Preso}) \\
 \mathcal{R}_{11B} &: (c_{\text{FY603}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{ZSH601}}) \implies \text{CausaRaiz}(\text{Bobina da Solenoide FY-603 Queimada ou Carretel Preso}) \\
+\mathcal{R}_{12A0} &: (p_{\text{NC701}}) \implies \text{CausaRaiz}(\text{Silo Principal A Saturado (>= 99\%) - Transbordo Iminente}) \\
 \mathcal{R}_{12A} &: (p_{\text{NC702}}) \implies \text{CausaRaiz}(\text{Silo Secundário B Saturado (>= 95\%) - Transbordo Iminente}) \\
 \mathcal{R}_{12B} &: (p_{\text{NC703}}) \implies \text{CausaRaiz}(\text{Silo de Refugo Categoria C Saturado (>= 95\%) - Transbordo Iminente}) \\
 \mathcal{R}_{13} &: (\text{FalhaLaço}(\text{LIT-101})) \implies \text{CausaRaiz}(\text{Cabo do Transmissor de Nível LIT-101 Rompido ou Curto-Circuito}) \\
@@ -295,6 +297,7 @@ Regras de Propagação de Trip Geral e Bloqueios em Cascata:
 $$\begin{aligned}
 \mathcal{R}_{\text{TRIP\_EMERG}} &: (p_{\text{EMERG}}) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{TRIP\_PNEUM}} &: (\text{CausaRaiz}(\text{Queda Crítica de Pressão Pneumática})) \implies \text{TripGeral} \\
+\mathcal{R}_{\text{TRIP\_SILO\_A}} &: (\text{CausaRaiz}(\text{Silo Principal A Saturado})) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{TRIP\_SILO\_B}} &: (\text{CausaRaiz}(\text{Silo Secundário B Saturado})) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{TRIP\_SILO\_C}} &: (\text{CausaRaiz}(\text{Silo de Refugo C Saturado})) \implies \text{TripGeral} \\
 \mathcal{R}_{\text{TRIP\_LACO}}  &: (\text{FalhaLaço}(\text{LIT-101}) \lor \text{FalhaLaço}(\text{PT-601})) \implies \text{TripGeral} \\
@@ -325,16 +328,17 @@ Para cumprir o entregável da Aula 10, formulamos uma suíte de testes de estres
 
 | Cenário ID | Descrição do Cenário Industrial | Injeção de Sinais Elétricos (Telemetria) | Condição Booleana | Efeito Esperado no Intertravamento | Diagnóstico Esperado (Forward Chaining) |
 | :---: | :--- | :--- | :---: | :---: | :--- |
-| **C01** | Operação Nominal em Regime Permanente | LIT-101 = $12.0\text{ mA}$ ($50\%$); ST-201 = $14.67\text{ mA}$ ($2.0\text{ m/s}$); PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); LIT-702 = $6.4\text{ mA}$ ($15\%$); LIT-703 = $6.4\text{ mA}$ ($15\%$) | Todos nominais | $c_{\text{PERM}} = 1$<br>$c_{\text{ALIM}} = 1$<br>$c_{\text{ESTEIRA}} = 1$ | Nenhum trip ou causa raiz anormal. Planta operando em regime de alta eficiência. |
+| **C01** | Operação Nominal em Regime Permanente | LIT-101 = $12.0\text{ mA}$ ($50\%$); ST-201 = $14.67\text{ mA}$ ($2.0\text{ m/s}$); PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); LIT-701 = $6.4\text{ mA}$ ($15\%$); LIT-702 = $6.4\text{ mA}$ ($15\%$); LIT-703 = $6.4\text{ mA}$ ($15\%$) | Todos nominais | $c_{\text{PERM}} = 1$<br>$c_{\text{ALIM}} = 1$<br>$c_{\text{ESTEIRA}} = 1$ | Nenhum trip ou causa raiz anormal. Planta operando em regime de alta eficiência. |
 | **C02** | Queda Crítica de Pressão Pneumática | PT-601 = $11.2\text{ mA}$ ($4.5\text{ bar} < 6.0\text{ bar}$) | $p_{\text{PAL601}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>$c_{\text{FY602}} = c_{\text{FY603}} = 0$ | $\mathcal{R}_{10}$: Queda Crítica de Pressão Pneumática $\to \mathcal{R}_{\text{TRIP\_PNEUM}} \to \text{TripGeral}$. |
 | **C03** | Travamento Mecânico do Rolo da Esteira com Sobrecarga Térmica | ST-201 = $4.0\text{ mA}$ ($0.0\text{ m/s}$); JI-201 = Ativo ($24\text{V}$); Comando $c_{\text{ESTEIRA}} = 1$ | $p_{\text{JI201}} = 1$<br>$p_{\text{MOV201}} = 0$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>$c_{\text{ESTEIRA}} = 0$ | $\mathcal{R}_{03}$: Travamento Mecânico no Rolo ou Queima de Motor $\to$ Desarme LOTO imediato. |
 | **C04** | Ruptura Física de Cabo 4–20 mA (Broken Wire) no LIT-101 | LIT-101 = $2.0\text{ mA}$ ($< 3.6\text{ mA}$ - Padrão NAMUR NE43) | $\text{FalhaLaço}(\text{LIT-101}) = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{13}$: Falha de laço elétrico por fio partido $\to \mathcal{R}_{\text{TRIP\_LACO}} \to \text{TripGeral}$. |
 | **C05** | Saturação Crítica do Silo de Rejeito Categoria C | LIT-703 = $19.36\text{ mA}$ ($96\% \ge 95\%$) | $p_{\text{NC703}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{12B}$: Silo Rejeito Saturado $\to \mathcal{R}_{\text{TRIP\_SILO\_C}} \to \text{TripGeral}$. |
 | **C06** | Saturação Crítica do Silo Secundário B | LIT-702 = $19.36\text{ mA}$ ($96\% \ge 95\%$) | $p_{\text{NC702}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{12A}$: Silo Secundário B Saturado $\to \mathcal{R}_{\text{TRIP\_SILO\_B}} \to \text{TripGeral}$. |
+| **C06B**| Saturação Crítica do Silo Principal A | LIT-701 = $19.84\text{ mA}$ ($99\% \ge 99\%$) | $p_{\text{NC701}} = 1$ | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$ | $\mathcal{R}_{12A0}$: Silo Principal A Saturado $\to \mathcal{R}_{\text{TRIP\_SILO\_A}} \to \text{TripGeral}$. |
 | **C07** | Falha Mecânica/Elétrica no Atuador FY-602 (Ejetor B) | Pulso $c_{\text{FY602}} = 1$; PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); ZSH-602 = Inativo ($0\text{V}$) | $c_{\text{FY602}} = 1$<br>$p_{\text{PAL601}} = 0$<br>$p_{\text{ZSH602}} = 0$ | Inibe ejeção B | $\mathcal{R}_{11A}$: Cilindro FY-602 Preso ou Válvula Travada $\to$ Manutenção da estação B. |
 | **C08** | Falha Mecânica/Elétrica na Válvula Solenoide FY-603 (Ejetor C) | Pulso $c_{\text{FY603}} = 1$; PT-601 = $15.2\text{ mA}$ ($7.0\text{ bar}$); ZSH-601 = Inativo ($0\text{V}$) | $c_{\text{FY603}} = 1$<br>$p_{\text{PAL601}} = 0$<br>$p_{\text{ZSH601}} = 0$ | Inibe ejeção C | $\mathcal{R}_{11B}$: Bobina Solenoide FY-603 Queimada $\to$ Substituição da válvula rápida. |
 | **C09** | Obstrução Mecânica no Bocal de Descarga do Funil | LIT-101 = $12.0\text{ mA}$ ($50\%$); ST-201 = $14.67\text{ mA}$ ($2.0\text{ m/s}$); FT-301 = $0.0\text{ kg/h}$ | $p_{\text{VAZAO\_NULA}} = 1$<br>$c_{\text{ALIM}} = 1$<br>$\neg p_{\text{NB101}} = 1$ | Bloqueio do alimentador | $\mathcal{R}_{01}$: Obstrução na grelha do funil $\to$ Limpeza mecânica sem parada da esteira. |
-| **C10** | Estresse Máximo: Tempestade de Alarmes Simultâneos | XA-901 = $1$ (Emergência); PT-601 = $3.2\text{ mA}$ (Fio rompido); LIT-702 = $19.5\text{ mA}$; LIT-703 = $19.68\text{ mA}$ | Múltiplos fatos críticos | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>Desarme Total | Resolução de conflitos ordena deduções por severidade, registrando todos no Audit Trail. |
+| **C10** | Estresse Máximo: Tempestade de Alarmes Simultâneos | XA-901 = $1$ (Emergência); PT-601 = $3.2\text{ mA}$ (Fio rompido); LIT-701 = $19.84\text{ mA}$; LIT-702 = $19.5\text{ mA}$; LIT-703 = $19.68\text{ mA}$ | Múltiplos fatos críticos | $c_{\text{PERM}} = 0$<br>$c_{\text{ALIM}} = 0$<br>Desarme Total | Resolução de conflitos ordena deduções por severidade, registrando todos no Audit Trail. |
 
 ---
 

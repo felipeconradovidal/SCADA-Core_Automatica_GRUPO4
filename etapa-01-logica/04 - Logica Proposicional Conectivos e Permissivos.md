@@ -145,30 +145,34 @@ graph TD
 ```
 ### 2.2. Permissão Geral de Operação ($c_{\text{PERM}}$)
 
-A Permissão Geral de Operação é o sinal mestre de habilitação do processo SCADA/CLP. A planta só é liberada para operar se não houver condição de emergência, se os sistemas elétricos e pneumáticos estiverem normais, se o reservatório de rejeitos não estiver transbordando e se a câmera de visão computacional estiver pronta.
+A Permissão Geral de Operação é o sinal mestre de habilitação do processo SCADA/CLP. A planta só é liberada para operar se não houver condição de emergência, se os sistemas elétricos e pneumáticos estiverem normais, se nenhum dos silos de coleta (A, B ou C) estiver transbordando e se a câmera de visão computacional estiver pronta.
 
 Para autorizar a Permissão Geral ($c_{\text{PERM}} = 1$), as seguintes condições de segurança e processo devem ser satisfeitas simultaneamente:
 1. **Ausência de emergência acionada** ($\neg p_{\text{EMERG}} = 1$);
 2. **Ausência de sobrecarga no motor da esteira** ($\neg p_{\text{JI201}} = 1$);
 3. **Pressão pneumática normal** ($\neg p_{\text{PAL601}} = 1$);
-4. **Reservatório de rejeito sem bloqueio por nível crítico** ($\neg p_{\text{NC703}} = 1$);
+4. **Silos A, B e C sem bloqueio por nível crítico** ($\neg p_{\text{NC701}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} = 1$);
 5. **Câmera de visão computacional operacional** ($p_{\text{KSA401}} = 1$).
 
 A expressão lógica formal da Permissão Geral de Operação consolidada é dada por:
 
-$$c_{\text{PERM}} \equiv \neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}$$
+$$c_{\text{PERM}} \equiv \neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC701}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}}$$
 
 ```mermaid
 graph TD
     EMERG[p_EMERG: Emergência Pressionada]
     JI201[p_JI201: Sobrecarga Motor Esteira]
     PAL601[p_PAL601: Pressão Pneumática Baixa]
-    NC703[p_NC703: Nível Crítico Rejeito]
+    NC701[p_NC701: Nível Crítico Silo A]
+    NC702[p_NC702: Nível Crítico Silo B]
+    NC703[p_NC703: Nível Crítico Rejeito C]
     KSA401[p_KSA401: Câmera Pronta]
 
     NOT_EMERG[NOT]
     NOT_JI201[NOT]
     NOT_PAL601[NOT]
+    NOT_NC701[NOT]
+    NOT_NC702[NOT]
     NOT_NC703[NOT]
 
     AND_PERM[AND]
@@ -177,11 +181,15 @@ graph TD
     EMERG --> NOT_EMERG
     JI201 --> NOT_JI201
     PAL601 --> NOT_PAL601
+    NC701 --> NOT_NC701
+    NC702 --> NOT_NC702
     NC703 --> NOT_NC703
 
     NOT_EMERG --> AND_PERM
     NOT_JI201 --> AND_PERM
     NOT_PAL601 --> AND_PERM
+    NOT_NC701 --> AND_PERM
+    NOT_NC702 --> AND_PERM
     NOT_NC703 --> AND_PERM
     KSA401 --> AND_PERM
 
@@ -385,14 +393,20 @@ $$\text{Bloqueio}_{\text{FY603}} \equiv \neg c_{\text{FY603}} = \neg (p_{\text{C
 
 ---
 
-### 2.5. Intertravamento por Transbordo de Silos ($p_{\text{NC702}}$ e $p_{\text{NC703}}$)
+### 2.5. Intertravamento por Transbordo dos Silos A, B e C ($p_{\text{NC701}}$, $p_{\text{NC702}}$ e $p_{\text{NC703}}$)
 
-Para evitar derramamento físico nos reservatórios de desvio, tanto o silo de grãos secundários ($\text{LIT-702}$) quanto o de rejeito ($\text{LIT-703}$) possuem chaves de nível crítico ($p_{\text{NC702}}$ e $p_{\text{NC703}}$). Ao atingirem 100%, desarmam a Permissão Geral de Operação:
+Para evitar derramamento físico nos reservatórios de coleta e rejeito, todos os três silos (Silo Principal A via $\text{LIT-701}$, Silo Secundário B via $\text{LIT-702}$ e Silo de Rejeito C via $\text{LIT-703}$) possuem chaves de nível crítico ($p_{\text{NC701}}$, $p_{\text{NC702}}$ e $p_{\text{NC703}}$). Ao atingirem $\ge 99\%$, desarmam imediatamente a Permissão Geral de Operação:
 
-$$\text{Trip}_{\text{GERAL}} \equiv \neg c_{\text{PERM}} = \neg (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}})$$
+$$\text{Trip}_{\text{GERAL}} \equiv \neg c_{\text{PERM}} = \neg (\neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land \neg p_{\text{NC701}} \land \neg p_{\text{NC702}} \land \neg p_{\text{NC703}} \land p_{\text{KSA401}})$$
 
 Aplicando as Leis de De Morgan:
 
-$$\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$$
+$$\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{NC701}} \lor p_{\text{NC702}} \lor p_{\text{NC703}} \lor \neg p_{\text{KSA401}}$$
 
-Dessa forma, o transbordo de qualquer um dos reservatórios de coleta interrompe imediatamente o alimentador vibratório via desabilitação de $c_{\text{PERM}}$.
+Definindo o alarme unificado de saturação dos silos:
+$$p_{\text{SILO\_CHEIO}} \equiv p_{\text{NC701}} \lor p_{\text{NC702}} \lor p_{\text{NC703}}$$
+
+O desarme geral pode ser reescrito sinteticamente como:
+$$\text{Trip}_{\text{GERAL}} \equiv p_{\text{EMERG}} \lor p_{\text{JI201}} \lor p_{\text{PAL601}} \lor p_{\text{SILO\_CHEIO}} \lor \neg p_{\text{KSA401}}$$
+
+Dessa forma, o transbordo de qualquer um dos reservatórios de coleta interrompe imediatamente o alimentador vibratório e a esteira transportadora via desabilitação de $c_{\text{PERM}}$.

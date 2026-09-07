@@ -48,13 +48,16 @@ export class PlantSimulation {
     };
 
     this.silos = {
-      siloA: { count: 0, massKg: 0.0, label: 'Categoria A (Aprovado)' },
-      siloB: { count: 0, massKg: 0.0, levelPercent: 8.0, maxCount: 250, label: 'Categoria B (Secundário)' },
-      siloC: { count: 0, massKg: 0.0, levelPercent: 12.0, maxCount: 200, label: 'Categoria C (Rejeitado)' } // LIT-703
+      siloA: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 1000, label: 'Categoria A (Aprovado Premium)' },
+      siloB: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 350,  label: 'Categoria B (Secundário Tolerável)' },
+      siloC: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 200,  label: 'Categoria C (Rejeitado / Defeitos)' }
     };
 
     // Tracking / Shift Register do CLP
     this.trackingQueue = []; // Grãos atualmente em trânsito entre a câmera e os ejetores
+
+    // Controle de Purga e Standby da Esteira
+    this.purgeTimer = 0.0;
 
     // Lista de grãos ativos no motor de física
     this.grains = [];
@@ -94,11 +97,13 @@ export class PlantSimulation {
     const plcOutputs = this.plc.evaluate();
 
     // 2. Dinâmica do Motor da Esteira (ST-201 e JI-201)
-    if (plcOutputs.c_PERM) {
+    // A esteira opera quando c_PERM e c_EST estão ativos (não em standby)
+    if (plcOutputs.c_PERM && plcOutputs.c_EST) {
       const targetSpeed = this.conveyor.speedSetpoint;
       this.conveyor.actualSpeed += (targetSpeed - this.conveyor.actualSpeed) * Math.min(1.0, dt * 3.0);
     } else {
-      this.conveyor.actualSpeed += (0 - this.conveyor.actualSpeed) * Math.min(1.0, dt * 5.0);
+      // Parada suave por inércia
+      this.conveyor.actualSpeed += (0 - this.conveyor.actualSpeed) * Math.min(1.0, dt * 4.0);
     }
     if (this.conveyor.actualSpeed < 0.005) this.conveyor.actualSpeed = 0;
 
@@ -109,6 +114,22 @@ export class PlantSimulation {
       this.conveyor.motorCurrent = 8.5; // Sobrecarga!
     } else {
       this.conveyor.motorCurrent = this.conveyor.actualSpeed > 0 ? (2.8 + this.conveyor.actualSpeed * 0.7) : 0.4;
+    }
+
+    // 3. Purga Automática da Esteira e Auto-Standby quando funil esvazia ou silo enche
+    const isSiloFull = this.plc.inputs.p_NC701 || this.plc.inputs.p_NC702 || this.plc.inputs.p_NC703;
+    const isHopperLow = this.hopper.level < 15.0;
+    const shouldPurgeAndStandby = isHopperLow || isSiloFull;
+
+    const activeBeltGrains = this.grains.filter(g => !g.collected && !g.ejected);
+    if (shouldPurgeAndStandby && activeBeltGrains.length === 0 && this.trackingQueue.length === 0) {
+      this.purgeTimer += dt;
+      if (this.purgeTimer >= 1.0) {
+        this.plc.inputs.p_STANDBY = true;
+      }
+    } else if (!isHopperLow && !isSiloFull) {
+      this.plc.inputs.p_STANDBY = false;
+      this.purgeTimer = 0.0;
     }
 
     // 3. Dinâmica do Funil e Alimentador Vibratório (c_ALIM)
@@ -180,15 +201,12 @@ export class PlantSimulation {
           if (distC < 14 && g.classifiedCategory === 'C') {
             grainInEjectorCPos = true;
 
-            if (this.plc.outputs.c_FY603 && !this.pneumatics.isJammedC) {
+            if (this.plc.outputs.c_FY603) {
               g.ejected = true;
               g.targetSilo = 'C';
               g.vy = 260; // Impulso vertical em direção ao Silo C
               g.vx = 35;
               this.pneumatics.blowEffectC = 1.0;
-            } else if (this.pneumatics.isJammedC) {
-              // Se travado mecanicamente, o grão escapa!
-              this.stats.missedRejects++;
             }
           }
 
@@ -197,7 +215,7 @@ export class PlantSimulation {
           if (distB < 14 && g.classifiedCategory === 'B') {
             grainInEjectorBPos = true;
 
-            if (this.plc.outputs.c_FY602 && !this.pneumatics.isJammedB) {
+            if (this.plc.outputs.c_FY602) {
               g.ejected = true;
               g.targetSilo = 'B';
               g.vy = 260; // Impulso vertical em direção ao Silo B
@@ -217,6 +235,7 @@ export class PlantSimulation {
               // Grão B ou C que não foi ejetado por falha ou bloqueio cai aqui como escape
               this.silos.siloA.count++;
             }
+            this.silos.siloA.levelPercent = Math.min(100, (this.silos.siloA.count / this.silos.siloA.maxCount) * 100);
             this.stats.totalProcessed++;
           }
 
@@ -255,7 +274,7 @@ export class PlantSimulation {
 
     // 7. Dinâmica dos Pistões Pneumáticos (C e B)
     // Pistão C (Rejeito)
-    if (this.plc.outputs.c_FY603 && !this.pneumatics.isJammedC) {
+    if (this.plc.outputs.c_FY603) {
       this.pneumatics.pistonStrokeC = Math.min(1.0, this.pneumatics.pistonStrokeC + this.pneumatics.pistonSpeed * dt);
     } else {
       this.pneumatics.pistonStrokeC = Math.max(0.0, this.pneumatics.pistonStrokeC - this.pneumatics.pistonSpeed * dt * 0.8);
@@ -264,7 +283,7 @@ export class PlantSimulation {
     this.plc.inputs.p_ZSH601 = this.pneumatics.pistonStrokeC > 0.85;
 
     // Pistão B (Secundário)
-    if (this.plc.outputs.c_FY602 && !this.pneumatics.isJammedB) {
+    if (this.plc.outputs.c_FY602) {
       this.pneumatics.pistonStrokeB = Math.min(1.0, this.pneumatics.pistonStrokeB + this.pneumatics.pistonSpeed * dt);
     } else {
       this.pneumatics.pistonStrokeB = Math.max(0.0, this.pneumatics.pistonStrokeB - this.pneumatics.pistonSpeed * dt * 0.8);
@@ -280,19 +299,8 @@ export class PlantSimulation {
       this.pneumatics.blowEffectB = Math.max(0, this.pneumatics.blowEffectB - dt * 6.0);
     }
 
-    // 8. Diagnóstico Formal de Falha do Atuador Pneumático (Discrepância Temporal)
-    // Avalia se o comando foi disparado mas o sensor de confirmação não atuou dentro de 70ms
-    if (this.plc.outputs.c_FY603) {
-      this.plc.ejectorTimerC += dt;
-      if (this.plc.ejectorTimerC > 0.07 && !this.plc.inputs.p_ZSH601) {
-        this.plc.diagnostics.p_FALHA_EJETOR = true;
-      }
-    } else {
-      this.plc.ejectorTimerC = 0;
-      if (!this.pneumatics.isJammedC && !this.pneumatics.isJammedB) {
-        this.plc.diagnostics.p_FALHA_EJETOR = false;
-      }
-    }
+    // 8. Diagnóstico de Ejetor (Sem falha mecânica simulada)
+    this.plc.diagnostics.p_FALHA_EJETOR = false;
 
     // 9. Cálculo Contínuo da Balança e Vazão Mássica (WT-301 / FT-301)
     this.scale.currentMassOnBeltKg = currentWeighZoneMass / 1000.0;
@@ -328,24 +336,62 @@ export class PlantSimulation {
     // Motor JI-201
     this.plc.inputs.p_JI201 = this.conveyor.isOverloaded;
 
+    // Silo A LIT-701
+    this.plc.inputs.p_NA701 = this.silos.siloA.levelPercent >= 90.0;
+    this.plc.inputs.p_NC701 = this.silos.siloA.levelPercent >= 95.0;
+
+    // Silo B LIT-702
+    this.plc.inputs.p_NA702 = this.silos.siloB.levelPercent >= 90.0;
+    this.plc.inputs.p_NC702 = this.silos.siloB.levelPercent >= 95.0;
+
     // Silo C LIT-703
     this.plc.inputs.p_NA703 = this.silos.siloC.levelPercent >= 90.0;
-    this.plc.inputs.p_NC703 = this.silos.siloC.levelPercent >= 99.5;
+    this.plc.inputs.p_NC703 = this.silos.siloC.levelPercent >= 95.0;
   }
 
   refillHopper() {
     this.hopper.level = 90.0;
+    this.updateSensorsToPLC();
+    const isSiloFull = this.plc.inputs.p_NC701 || this.plc.inputs.p_NC702 || this.plc.inputs.p_NC703;
+    if (!isSiloFull) {
+      this.plc.inputs.p_STANDBY = false;
+      this.purgeTimer = 0.0;
+    }
   }
 
-  emptySiloC() {
-    this.silos.siloC.count = 0;
-    this.silos.siloC.massKg = 0;
-    this.silos.siloC.levelPercent = 0;
+  emptySiloA() {
+    this.silos.siloA.count = 0;
+    this.silos.siloA.massKg = 0;
+    this.silos.siloA.levelPercent = 0;
+    this.updateSensorsToPLC();
+    const isSiloFull = this.plc.inputs.p_NC701 || this.plc.inputs.p_NC702 || this.plc.inputs.p_NC703;
+    if (this.hopper.level >= 15.0 && !isSiloFull) {
+      this.plc.inputs.p_STANDBY = false;
+      this.purgeTimer = 0.0;
+    }
   }
 
   emptySiloB() {
     this.silos.siloB.count = 0;
     this.silos.siloB.massKg = 0;
     this.silos.siloB.levelPercent = 0;
+    this.updateSensorsToPLC();
+    const isSiloFull = this.plc.inputs.p_NC701 || this.plc.inputs.p_NC702 || this.plc.inputs.p_NC703;
+    if (this.hopper.level >= 15.0 && !isSiloFull) {
+      this.plc.inputs.p_STANDBY = false;
+      this.purgeTimer = 0.0;
+    }
+  }
+
+  emptySiloC() {
+    this.silos.siloC.count = 0;
+    this.silos.siloC.massKg = 0;
+    this.silos.siloC.levelPercent = 0;
+    this.updateSensorsToPLC();
+    const isSiloFull = this.plc.inputs.p_NC701 || this.plc.inputs.p_NC702 || this.plc.inputs.p_NC703;
+    if (this.hopper.level >= 15.0 && !isSiloFull) {
+      this.plc.inputs.p_STANDBY = false;
+      this.purgeTimer = 0.0;
+    }
   }
 }

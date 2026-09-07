@@ -22,16 +22,38 @@ Abra o arquivo `simulador/index.html` em qualquer navegador web moderno (Google 
 
 ## 🛠️ Arquitetura e Módulos do Sistema
 
+O sistema adota uma **Arquitetura de Visualização Dupla (Dual-View)** baseada no mesmo núcleo de simulação física e lógica de controle em tempo real:
+
 | Arquivo | Função / Camada |
 | :--- | :--- |
-| `index.html` | Interface HMI / SCADA com Sinótico 2D, Mesa de Comando, Quadro de Alarmes e Painel de Falhas |
-| `css/style.css` | Estilos industriais escuros, lâmpadas piloto com glow neon e botões industriais táteis |
+| `index.html` | Interface unificada com comutador Dual-Mode: **Modo Didático** e **Modo SCADA Industrial** |
+| `css/style.css` | Estilos industriais escuros, High-Performance HMI (ISA-101), lâmpadas piloto e Faceplates |
+| `js/scada_industrial.js` | Camada SCADA Industrial Real: P&ID (ISA 5.1), Faceplates interativos, Banner de Alarmes (ISA 18.2) e Telas N1–N4 |
+| `js/scada.js` | Controlador central da supervisão, orquestrador do loop de animação e renderizador do Gêmeo Didático 2D |
 | `js/logic.js` | CLP Virtual com a cadeia de **Lógica Proposicional** e intertravamentos de segurança (ISA 5.1) |
 | `js/vision.js` | Sistema de **Visão Computacional** com extração de atributos dos grãos e HUD estilo OpenCV |
 | `js/engine.js` | Motor de **Cinemática e Física** da esteira, alimentador vibratório, balança e pistão pneumático |
 | `js/charts.js` | Historiador e gráficos em tempo real de vazão mássica ($FT-301$) e distribuição de categorias |
-| `js/scada.js` | Controlador central da supervisão, renderizador do sinótico e gerenciador de alarmes (ISA 18.2) |
 | `run_simulador.py` | Servidor HTTP local standalone com auto-start no navegador |
+
+---
+
+## 🏭 Dual-Mode: Modos de Operação
+
+Na barra superior (`header`), o usuário pode alternar instantaneamente entre dois ambientes de visualização sem interromper a produção:
+
+1. **Modo Gêmeo Didático (`🔬`)**:
+   - Corte lateral 2D com física explícita de grãos caindo e trafegando na esteira.
+   - Painel didático de equações da lógica proposicional com LEDs de acompanhamento.
+   - Visor OpenCV em tempo real com caixas delimitadoras e atributos de grãos.
+   - Painel de injeção direta de falhas e zoom/pan com câmera livre.
+
+2. **Modo SCADA Industrial (`🏭`)**:
+   - **Norma ISA-101 (High-Performance HMI)**: Paleta de cores neutras cinza-ardósia de baixo contraste para redução de fadiga visual em salas de controle; cores saturadas (vermelho, âmbar) reservadas estritamente para alarmes e anomalias.
+   - **Norma ISA-5.1 (P&ID)**: Fluxograma de engenharia com tanques, esteira com motor acoplado `M-201`, válvulas solenoides com atuador `S` (`XV-602`, `XV-603`), instrumentos em bolhas normatizadas com leituras analógicas em tempo real (`LIT-101`, `ST-201`, `WT-301`, `FT-301`, `PT-601`, `JI-201`).
+   - **Faceplates Interativos**: Clicar sobre qualquer equipamento no P&ID abre uma janela pop-up industrial com abas de **Operação (Auto/Manual)**, **Intertravamentos Lógicos Ativos** e **Manutenção/Horímetro**.
+   - **Norma ISA-18.2 (Gestão de Alarmes)**: Banner superior fixo exibindo o alarme crítico mais recente com botões operacionais de Reconhecimento (`ACK`) e Silenciamento Acústico (`MUTE`).
+   - **Hierarquia de Telas ISA-101**: Navegação modular entre N1 (Visão Geral & KPIs), N2 (Sinótico P&ID Operacional), N3 (Historiador & Tendências) e N4 (Engenharia & Diagnóstico de I/O do CLP).
 
 ---
 
@@ -67,4 +89,5 @@ Abra o arquivo `simulador/index.html` em qualquer navegador web moderno (Google 
 ---
 
 ## 🧪 Recursos de Comissionamento e Teste
-O painel inclui chaves de **Injeção de Falhas**, permitindo validar em tempo real o desarmamento dos permissivos, a atuação de alarmes segundo a **ISA 18.2** e o diagnóstico de falha de ejetor (`p_FALHA_EJETOR`).
+O painel inclui chaves de **Injeção de Falhas**, permitindo validar em tempo real o desarmamento dos permissivos, a atuação de alarmes segundo a **ISA 18.2** e o diagnóstico de falha de ejetor (`p_FALHA_EJETOR`). No Modo SCADA Industrial, essas chaves ficam alocadas na tela restrita de **Engenharia & Diagnóstico (Nível 4)**.
+
