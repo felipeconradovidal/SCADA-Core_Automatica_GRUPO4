@@ -34,14 +34,23 @@ export class IndustrialSCADAView {
       { tag: 'V-701', name: 'Silo A (Aprovado Premium)', type: 'siloA', x: 880, y: 280, w: 120, h: 130 },
     ];
 
-    // Histórico de Tendência Dedicado (N3)
+    // Histórico de Tendência Dedicado (N3) - Janela de 60 segundos contínua (120 amostras @ 2Hz)
+    this.maxTrendSamples = 120;
+    this.trendSampleTimer = 0;
     this.trendHistory = {
       timestamps: [],
       flowRate: [],
       speed: [],
       pressure: []
     };
-    this.maxTrendSamples = 60;
+
+    // Pré-carrega histórico estável para cobrir imediatamente a janela completa de 60s
+    for (let i = 0; i < this.maxTrendSamples; i++) {
+      this.trendHistory.timestamps.push(0);
+      this.trendHistory.flowRate.push(0);
+      this.trendHistory.speed.push(0);
+      this.trendHistory.pressure.push(6.0 * 20); // 6.0 bar de repouso nominal
+    }
 
     this.initElements();
     this.initEventListeners();
@@ -55,10 +64,6 @@ export class IndustrialSCADAView {
     }
 
     this.trendCanvasN3 = document.getElementById('trendCanvasN3');
-    if (this.trendCanvasN3) {
-      this.trendCanvasN3.width = 1000;
-      this.trendCanvasN3.height = 260;
-    }
   }
 
   initEventListeners() {
@@ -194,6 +199,9 @@ export class IndustrialSCADAView {
   }
 
   update(dt) {
+    // 0. Amostragem contínua do Historiador N3 (em background, independente da tela ativa)
+    this.updateTrendSampling(dt);
+
     // 1. Atualizar Banner Superior ISA-18.2
     this.updateAlarmBanner();
 
@@ -301,7 +309,7 @@ export class IndustrialSCADAView {
     ctx.fillStyle = '#4d7373';
     ctx.fillRect(0, 0, w, h);
 
-    // 2. Malha Matricial de Pontos de Alinhamento Técnico (Dotted Grid da Referência)
+    // 2. Malha Matricial de Pontos de Alinhamento Técnico (Dotted Grid)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
     for (let x = 12; x < w; x += 16) {
       for (let y = 12; y < h; y += 16) {
@@ -832,74 +840,189 @@ export class IndustrialSCADAView {
   }
 
   // =========================================================================
+  // AMOSTRAGEM CONTÍNUA DO HISTORIADOR (ISA-101 LEVEL 3)
+  // =========================================================================
+  updateTrendSampling(dt) {
+    this.trendSampleTimer = (this.trendSampleTimer || 0) + dt;
+    // Amostra a cada 0.5s (2 Hz). Com 120 amostras = 60 segundos exatos de janela móvel
+    if (this.trendSampleTimer >= 0.5) {
+      this.trendSampleTimer = 0;
+      this.trendHistory.timestamps.push(Date.now());
+      this.trendHistory.flowRate.push(this.sim.scale.massFlowKgPerHour || 0);
+      this.trendHistory.speed.push((this.sim.conveyor.actualSpeed || 0) * 100);
+      this.trendHistory.pressure.push((this.sim.pneumatics.pressureBar || 0) * 20);
+
+      while (this.trendHistory.flowRate.length > this.maxTrendSamples) {
+        this.trendHistory.timestamps.shift();
+        this.trendHistory.flowRate.shift();
+        this.trendHistory.speed.shift();
+        this.trendHistory.pressure.shift();
+      }
+    }
+  }
+
+  resizeTrendCanvas() {
+    if (!this.trendCanvasN3) return;
+    const rect = this.trendCanvasN3.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const targetW = Math.round(rect.width * dpr);
+    const targetH = Math.round(rect.height * dpr);
+
+    if (this.trendCanvasN3.width !== targetW || this.trendCanvasN3.height !== targetH) {
+      this.trendCanvasN3.width = targetW;
+      this.trendCanvasN3.height = targetH;
+    }
+  }
+
+  // =========================================================================
   // TELA N3: HISTORIADOR E TENDÊNCIAS (ISA-101 LEVEL 3)
   // =========================================================================
   updateScreenN3(dt) {
     if (!this.trendCanvasN3) return;
-    const ctx = this.trendCanvasN3.getContext('2d');
-    const w = this.trendCanvasN3.width;
-    const h = this.trendCanvasN3.height;
+    this.resizeTrendCanvas();
 
-    // Fundo preto de registrador gráfico clássico
-    ctx.fillStyle = '#000000';
+    const dpr = window.devicePixelRatio || 1;
+    const w = this.trendCanvasN3.width / dpr;
+    const h = this.trendCanvasN3.height / dpr;
+    if (w <= 0 || h <= 0) return;
+
+    // 1. Atualizar valores nos cards HTML (leitura nítida sem esticamento de canvas)
+    const elFT = document.getElementById('trendValFT301');
+    if (elFT) elFT.textContent = (this.sim.scale.massFlowKgPerHour || 0).toFixed(1) + ' kg/h';
+
+    const elST = document.getElementById('trendValST201');
+    if (elST) elST.textContent = (this.sim.conveyor.actualSpeed || 0).toFixed(2) + ' m/s';
+
+    const elPT = document.getElementById('trendValPT601');
+    if (elPT) elPT.textContent = (this.sim.pneumatics.pressureBar || 0).toFixed(1) + ' bar';
+
+    const ctx = this.trendCanvasN3.getContext('2d');
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    // Fundo escuro industrial de alta fidelidade
+    ctx.fillStyle = '#06090e';
     ctx.fillRect(0, 0, w, h);
 
-    // Amostragem
-    this.trendHistory.timestamps.push(new Date().toLocaleTimeString());
-    this.trendHistory.flowRate.push(this.sim.scale.massFlowKgPerHour);
-    this.trendHistory.speed.push(this.sim.conveyor.actualSpeed * 100);
-    this.trendHistory.pressure.push(this.sim.pneumatics.pressureBar * 20);
+    const padLeft = 52;
+    const padRight = 30;
+    const padTop = 32;
+    const padBottom = 30;
+    const plotW = Math.max(10, w - padLeft - padRight);
+    const plotH = Math.max(10, h - padTop - padBottom);
+    const baseY = padTop + plotH;
 
-    if (this.trendHistory.flowRate.length > this.maxTrendSamples) {
-      this.trendHistory.timestamps.shift();
-      this.trendHistory.flowRate.shift();
-      this.trendHistory.speed.shift();
-      this.trendHistory.pressure.shift();
-    }
-
-    // Grade técnica verde/cinza suave de osciloscópio/registrador
-    ctx.strokeStyle = '#003300';
+    // Grade do eixo Y (0%, 25%, 50%, 75%, 100%)
     ctx.lineWidth = 1;
-    for (let y = 30; y < h - 30; y += 35) {
-      ctx.beginPath(); ctx.moveTo(50, y); ctx.lineTo(w - 20, y); ctx.stroke();
-    }
-    for (let x = 50; x < w - 20; x += 60) {
-      ctx.beginPath(); ctx.moveTo(x, 30); ctx.lineTo(x, h - 30); ctx.stroke();
-    }
+    ctx.font = '10px "Segoe UI", Consolas, monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
 
-    // Curvas
-    this.drawTrendLine(ctx, this.trendHistory.flowRate, '#00ff00', 0, 300, 50, h - 30, w - 70, h - 60);
-    this.drawTrendLine(ctx, this.trendHistory.speed, '#ffff00', 0, 150, 50, h - 30, w - 70, h - 60);
-    this.drawTrendLine(ctx, this.trendHistory.pressure, '#ff9900', 0, 160, 50, h - 30, w - 70, h - 60);
+    const yLevels = [
+      { lvl: 0, label: '0%' },
+      { lvl: 0.25, label: '25%' },
+      { lvl: 0.50, label: '50%' },
+      { lvl: 0.75, label: '75%' },
+      { lvl: 1.0, label: '100%' }
+    ];
 
-    // Legendas industriais no topo
-    ctx.font = 'bold 10px monospace';
-    ctx.fillStyle = '#00ff00';
-    ctx.fillText('■ FT-301: Vazão Mássica (kg/h)', 60, 20);
-    ctx.fillStyle = '#ffff00';
-    ctx.fillText('■ ST-201: Velocidade Esteira (m/s x100)', 320, 20);
-    ctx.fillStyle = '#ff9900';
-    ctx.fillText('■ PT-601: Pressão Ar (bar x20)', 620, 20);
+    yLevels.forEach(yItem => {
+      const y = baseY - yItem.lvl * plotH;
+      ctx.strokeStyle = yItem.lvl === 0 || yItem.lvl === 1.0 ? '#263342' : '#141d27';
+      ctx.beginPath();
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(w - padRight, y);
+      ctx.stroke();
+
+      ctx.fillStyle = '#64748b';
+      ctx.fillText(yItem.label, padLeft - 8, y);
+    });
+
+    // Grade do eixo X de Tempo (Janela de 60 Segundos: marcações de 10s em 10s)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const timeMarks = [
+      { sec: 60, label: '-60s' },
+      { sec: 50, label: '-50s' },
+      { sec: 40, label: '-40s' },
+      { sec: 30, label: '-30s' },
+      { sec: 20, label: '-20s' },
+      { sec: 10, label: '-10s' },
+      { sec: 0, label: '0s (Agora)' }
+    ];
+
+    timeMarks.forEach(tm => {
+      const x = padLeft + ((60 - tm.sec) / 60) * plotW;
+      ctx.strokeStyle = tm.sec === 0 ? '#38bdf8' : '#141d27';
+      ctx.beginPath();
+      ctx.moveTo(x, padTop);
+      ctx.lineTo(x, baseY);
+      ctx.stroke();
+
+      ctx.fillStyle = tm.sec === 0 ? '#38bdf8' : '#64748b';
+      ctx.fillText(tm.label, x, baseY + 8);
+    });
+
+    // Curvas dos canais com traçado suave
+    // FT-301: Vazão Mássica (0 a 3.0 kg/h)
+    this.drawTrendLine(ctx, this.trendHistory.flowRate, '#00ff66', 0, 3.0, padLeft, baseY, plotW, plotH);
+    // ST-201: Velocidade da Esteira (0 a 1.0 m/s => 0 a 100)
+    this.drawTrendLine(ctx, this.trendHistory.speed, '#ffea00', 0, 100, padLeft, baseY, plotW, plotH);
+    // PT-601: Pressão Pneumática (0 a 10 bar => 0 a 200)
+    this.drawTrendLine(ctx, this.trendHistory.pressure, '#ff9900', 0, 200, padLeft, baseY, plotW, plotH);
+
+    // Título e identificador interno no topo do canvas com fonte nítida
+    ctx.font = 'bold 11px "Segoe UI", Consolas, monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('REGISTRADOR TEMPORAL MULTI-PEN (BUFFER CONTÍNUO DE 60s @ 2Hz)', padLeft, 16);
+
+    ctx.restore();
   }
 
   drawTrendLine(ctx, data, color, minVal, maxVal, startX, baseY, plotW, plotH) {
-    if (data.length < 2) return;
-    const stepX = plotW / (this.maxTrendSamples - 1);
+    if (!data || data.length < 2) return;
+    const totalSamples = this.maxTrendSamples;
+    const stepX = plotW / (totalSamples - 1);
+    const offset = totalSamples - data.length;
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.beginPath();
 
     for (let i = 0; i < data.length; i++) {
       const val = data[i];
       const norm = Math.max(0, Math.min(1, (val - minVal) / (maxVal - minVal)));
-      const x = startX + i * stepX;
+      const x = startX + (offset + i) * stepX;
       const y = baseY - norm * plotH;
 
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
+
+    // Marcador visual na ponta mais recente (leitura instantânea na linha do tempo)
+    if (data.length > 0) {
+      const lastVal = data[data.length - 1];
+      const lastNorm = Math.max(0, Math.min(1, (lastVal - minVal) / (maxVal - minVal)));
+      const lastX = startX + (offset + data.length - 1) * stepX;
+      const lastY = baseY - lastNorm * plotH;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // =========================================================================

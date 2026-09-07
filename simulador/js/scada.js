@@ -319,13 +319,32 @@ export class SCADASystem {
       });
     }
 
-    // 4. Botões Rápidos de Preset de Câmera
-    this.setupPresetBtn('btnPresetAll', () => this.resetCamera());
-    this.setupPresetBtn('btnPresetHopper', () => this.focusComponent(80, 190, 1.85));
-    this.setupPresetBtn('btnPresetScale', () => this.focusComponent(235, 230, 2.1));
-    this.setupPresetBtn('btnPresetVision', () => this.focusComponent(400, 200, 2.2));
-    this.setupPresetBtn('btnPresetEjectors', () => this.focusComponent(610, 210, 1.95));
-    this.setupPresetBtn('btnPresetSilos', () => this.focusComponent(800, 230, 1.7));
+    // 4. Botões Rápidos de Foco de Estação (Visualização 100% estável sem saltos bruscos)
+    this.focusedStation = null;
+    this.setupPresetBtn('btnPresetAll', () => {
+      this.resetCamera();
+      this.focusedStation = null;
+    });
+    this.setupPresetBtn('btnPresetHopper', () => {
+      this.resetCamera();
+      this.focusedStation = 'hopper';
+    });
+    this.setupPresetBtn('btnPresetScale', () => {
+      this.resetCamera();
+      this.focusedStation = 'scale';
+    });
+    this.setupPresetBtn('btnPresetVision', () => {
+      this.resetCamera();
+      this.focusedStation = 'vision';
+    });
+    this.setupPresetBtn('btnPresetEjectors', () => {
+      this.resetCamera();
+      this.focusedStation = 'ejectors';
+    });
+    this.setupPresetBtn('btnPresetSilos', () => {
+      this.resetCamera();
+      this.focusedStation = 'silos';
+    });
 
     canvas.style.cursor = 'grab';
   }
@@ -335,10 +354,22 @@ export class SCADASystem {
     if (!btn) return;
     btn.addEventListener('click', () => {
       callback();
-      // Feedback visual no botão ativo
-      document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('bg-cyan-900', 'text-cyan-300', 'border-cyan-500'));
-      btn.classList.add('bg-cyan-900', 'text-cyan-300', 'border-cyan-500');
+      this.setActivePresetBtn(id);
     });
+  }
+
+  setActivePresetBtn(id) {
+    const ids = ['btnPresetAll', 'btnPresetHopper', 'btnPresetScale', 'btnPresetVision', 'btnPresetEjectors', 'btnPresetSilos'];
+    ids.forEach(bId => {
+      const b = document.getElementById(bId);
+      if (b) {
+        b.classList.remove('active', 'bg-cyan-900', 'text-cyan-300', 'border-cyan-500');
+      }
+    });
+    const active = document.getElementById(id);
+    if (active) {
+      active.classList.add('active');
+    }
   }
 
   setZoomAtCenter(newZoom) {
@@ -355,19 +386,12 @@ export class SCADASystem {
     this.clampPan();
   }
 
-  focusComponent(worldX, worldY, zoom) {
-    const canvas = this.synopticCanvas;
-    if (!canvas) return;
-    this.viewport.targetZoom = zoom;
-    this.viewport.targetPanX = (canvas.width / 2) - (worldX * zoom);
-    this.viewport.targetPanY = (canvas.height / 2) - (worldY * zoom);
-    this.clampPan();
-  }
-
   resetCamera() {
     this.viewport.targetZoom = 1.0;
     this.viewport.targetPanX = 0;
     this.viewport.targetPanY = 0;
+    this.focusedStation = null;
+    this.setActivePresetBtn('btnPresetAll');
   }
 
   clampPan() {
@@ -504,10 +528,10 @@ export class SCADASystem {
     ctx.translate(this.viewport.panX, this.viewport.panY);
     ctx.scale(this.viewport.zoom, this.viewport.zoom);
 
-    // Grade matricial técnica de pontos (Dotted Grid)
+    // Grade matricial técnica de pontos (Dotted Grid) CONECTADA AO MUNDO VIRTUAL
     ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-    for (let x = -400; x < 1400; x += 16) {
-      for (let y = -200; y < 600; y += 16) {
+    for (let x = -600; x < 1600; x += 16) {
+      for (let y = -300; y < 700; y += 16) {
         ctx.fillRect(x, y, 1.5, 1.5);
       }
     }
@@ -543,6 +567,9 @@ export class SCADASystem {
     // 9. GRÃOS EM TRÂNSITO
     this.drawGrains(ctx);
 
+    // 10. DESTAQUE VISUAL DA ESTAÇÃO FOCADA (SEM DESLOCAR A TELA)
+    this.drawStationHighlight(ctx);
+
     ctx.restore();
 
     // --- INDICADOR DE ZOOM ATUAL NO CANTO ---
@@ -554,6 +581,53 @@ export class SCADASystem {
     ctx.font = 'bold 8.5px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(`ZOOM: ${(this.viewport.zoom * 100).toFixed(0)}% (Scroll / Drag)`, 14, h - 11);
+  }
+
+  drawStationHighlight(ctx) {
+    if (!this.focusedStation) return;
+    const { hopperX, scaleStartX, scaleEndX, cameraX, ejectorCX, ejectorBX, endConveyorX, conveyorY } = this.sim.layout;
+
+    let targetBox = null;
+    let label = '';
+    if (this.focusedStation === 'hopper') {
+      targetBox = { x: hopperX - 45, y: conveyorY - 155, w: 90, h: 140 };
+      label = 'FOCO: 1. FUNIL RECEPTOR TK-101';
+    } else if (this.focusedStation === 'scale') {
+      targetBox = { x: scaleStartX - 15, y: conveyorY - 20, w: (scaleEndX - scaleStartX) + 30, h: 55 };
+      label = 'FOCO: 2. BALANÇA WT-301 / FT-301';
+    } else if (this.focusedStation === 'vision') {
+      targetBox = { x: cameraX - 45, y: conveyorY - 105, w: 90, h: 110 };
+      label = 'FOCO: 3. INSPEÇÃO ÓPTICA KSA-401';
+    } else if (this.focusedStation === 'ejectors') {
+      targetBox = { x: ejectorCX - 35, y: conveyorY - 100, w: (ejectorBX - ejectorCX) + 70, h: 105 };
+      label = 'FOCO: 4. EJETORES PNEUMÁTICOS FY-603 / FY-602';
+    } else if (this.focusedStation === 'silos') {
+      targetBox = { x: ejectorCX - 35, y: conveyorY + 25, w: (endConveyorX - ejectorCX) + 110, h: 130 };
+      label = 'FOCO: 5. SILOS DE DESTINO A / B / C';
+    }
+
+    if (targetBox) {
+      ctx.save();
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 3]);
+      ctx.strokeRect(targetBox.x, targetBox.y, targetBox.w, targetBox.h);
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(11, 47, 74, 0.88)';
+      const textW = 195;
+      ctx.fillRect(targetBox.x, targetBox.y - 18, textW, 16);
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(targetBox.x, targetBox.y - 18, textW, 16);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 9px "Segoe UI", Tahoma, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, targetBox.x + 6, targetBox.y - 10);
+      ctx.restore();
+    }
   }
 
   drawProcessStepsHeader(ctx, w) {

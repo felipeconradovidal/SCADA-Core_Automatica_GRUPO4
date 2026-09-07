@@ -10,7 +10,7 @@ export class SCADACharts {
     this.distCanvas = distCanvas;
 
     this.flowHistory = [];
-    this.maxDataPoints = 60; // 60 amostras (ex: 1 por segundo)
+    this.maxDataPoints = 120; // 120 amostras (a cada 0.5s = 60 segundos exatos de janela móvel)
     this.sampleTimer = 0;
   }
 
@@ -58,13 +58,13 @@ export class SCADACharts {
     ctx.fillStyle = '#00ff00';
     ctx.font = 'bold 8.5px monospace';
     ctx.textAlign = 'right';
-    const maxVal = 120; // kg/h máximo no display
-    ctx.fillText('120', 30, 20);
-    ctx.fillText('60', 30, (h - 20) / 2 + 10);
+    const maxVal = 3.0; // kg/h máximo no display
+    ctx.fillText('3.0', 30, 20);
+    ctx.fillText('1.5', 30, (h - 20) / 2 + 10);
     ctx.fillText('0', 30, h - 22);
 
-    // Linha de Limite de Processo (Linha tracejada de Alarme Alto LAH: 95 kg/h)
-    const lahY = h - 22 - (95 / maxVal) * (h - 45);
+    // Linha de Limite de Processo (Linha tracejada de Alarme Alto LAH: 2.5 kg/h)
+    const lahY = h - 22 - (2.5 / maxVal) * (h - 45);
     ctx.strokeStyle = '#ff3333';
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
