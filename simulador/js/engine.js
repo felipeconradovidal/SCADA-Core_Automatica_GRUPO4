@@ -13,7 +13,7 @@ export class PlantSimulation {
     // Estado Físico dos Componentes
     this.hopper = {
       level: 75.0,        // LIT-101: % de preenchimento do funil (0 a 100%)
-      capacityKg: 50.0,
+      capacityKg: 25.0,   // Reduzido em 50% para dinamismo em apresentações
       isObstructed: false,
     };
 
@@ -48,9 +48,9 @@ export class PlantSimulation {
     };
 
     this.silos = {
-      siloA: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 1000, label: 'Categoria A (Aprovado Premium)' },
-      siloB: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 350,  label: 'Categoria B (Secundário Tolerável)' },
-      siloC: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 200,  label: 'Categoria C (Rejeitado / Defeitos)' }
+      siloA: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 500, label: 'Categoria A (Aprovado Premium)' },
+      siloB: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 175, label: 'Categoria B (Secundário Tolerável)' },
+      siloC: { count: 0, massKg: 0.0, levelPercent: 0.0, maxCount: 100, label: 'Categoria C (Rejeitado / Defeitos)' }
     };
 
     // Tracking / Shift Register do CLP
@@ -134,7 +134,7 @@ export class PlantSimulation {
 
     // 3. Dinâmica do Funil e Alimentador Vibratório (c_ALIM)
     if (plcOutputs.c_ALIM && !this.hopper.isObstructed && this.hopper.level > 0) {
-      const consumption = (dt * 0.35);
+      const consumption = (dt * 0.70); // Taxa de consumo ágil para apresentação
       this.hopper.level = Math.max(0, this.hopper.level - consumption);
 
       this.spawnTimer += dt;

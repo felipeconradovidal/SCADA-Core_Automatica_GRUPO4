@@ -43,9 +43,21 @@ export class SCADASystem {
       maxZoom: 3.5
     };
 
-    // Histórico de Alarmes
+    // Histórico de Alarmes e Detecção de Bordas ISA-18.2
     this.alarmList = [];
-    this.lastFaultEjector = false;
+    this.lastAlarmStates = {
+      p_NA701: false,
+      p_NC701: false,
+      p_NA702: false,
+      p_NC702: false,
+      p_NA703: false,
+      p_NC703: false,
+      p_NB101: false,
+      p_STANDBY: false,
+      p_FALHA_EJETOR: false
+    };
+
+    this.simSpeedMultiplier = 1; // 1x, 2x, 4x
 
     this.lastTimestamp = performance.now();
     this.chartSampleAccumulator = 0;
@@ -189,36 +201,72 @@ export class SCADASystem {
 
     this.setupFaultToggle('faultSiloAFull', (active) => {
       this.sim.silos.siloA.levelPercent = active ? 100.0 : 20.0;
-      this.sim.silos.siloA.count = active ? 1000 : 200;
+      this.sim.silos.siloA.count = active ? this.sim.silos.siloA.maxCount : Math.round(this.sim.silos.siloA.maxCount * 0.2);
       this.sim.updateSensorsToPLC();
       if (!active && this.sim.hopper.level >= 15.0 && !this.plc.inputs.p_NC702 && !this.plc.inputs.p_NC703) {
         this.plc.inputs.p_STANDBY = false;
         this.sim.purgeTimer = 0.0;
       }
-      if (active) this.logAlarm('LIT-701', 'Nível Crítico atingido no Silo A (100%) -> Bloqueio de alimentação!', 'CRÍTICO');
     });
 
     this.setupFaultToggle('faultSiloBFull', (active) => {
       this.sim.silos.siloB.levelPercent = active ? 100.0 : 20.0;
-      this.sim.silos.siloB.count = active ? 350 : 70;
+      this.sim.silos.siloB.count = active ? this.sim.silos.siloB.maxCount : Math.round(this.sim.silos.siloB.maxCount * 0.2);
       this.sim.updateSensorsToPLC();
       if (!active && this.sim.hopper.level >= 15.0 && !this.plc.inputs.p_NC701 && !this.plc.inputs.p_NC703) {
         this.plc.inputs.p_STANDBY = false;
         this.sim.purgeTimer = 0.0;
       }
-      if (active) this.logAlarm('LIT-702', 'Nível Crítico atingido no Silo B (100%) -> Bloqueio de alimentação!', 'CRÍTICO');
     });
 
     this.setupFaultToggle('faultSiloCFull', (active) => {
       this.sim.silos.siloC.levelPercent = active ? 100.0 : 20.0;
-      this.sim.silos.siloC.count = active ? 200 : 40;
+      this.sim.silos.siloC.count = active ? this.sim.silos.siloC.maxCount : Math.round(this.sim.silos.siloC.maxCount * 0.2);
       this.sim.updateSensorsToPLC();
       if (!active && this.sim.hopper.level >= 15.0 && !this.plc.inputs.p_NC701 && !this.plc.inputs.p_NC702) {
         this.plc.inputs.p_STANDBY = false;
         this.sim.purgeTimer = 0.0;
       }
-      if (active) this.logAlarm('LIT-703', 'Nível Crítico atingido no Silo C (100%) -> Bloqueio de alimentação!', 'CRÍTICO');
     });
+
+    // Seletor de Velocidade da Simulação (1x, 2x, 4x)
+    const btnSpeed1x = document.getElementById('btnSimSpeed1x');
+    const btnSpeed2x = document.getElementById('btnSimSpeed2x');
+    const btnSpeed4x = document.getElementById('btnSimSpeed4x');
+
+    const updateSpeedUI = (speed) => {
+      this.simSpeedMultiplier = speed;
+      [btnSpeed1x, btnSpeed2x, btnSpeed4x].forEach(b => {
+        if (b) {
+          b.className = 'btn-classic px-2 py-0.5 text-[10px] font-bold bg-[#c0c0c0] text-black';
+        }
+      });
+      const activeBtn = speed === 1 ? btnSpeed1x : (speed === 2 ? btnSpeed2x : btnSpeed4x);
+      if (activeBtn) {
+        activeBtn.className = 'btn-classic px-2 py-0.5 text-[10px] font-bold bg-[#404040] text-white border-black';
+      }
+      this.logAlarm('SISTEMA', `Velocidade da simulação ajustada para ${speed}x.`, 'INFO');
+    };
+
+    if (btnSpeed1x) btnSpeed1x.addEventListener('click', () => updateSpeedUI(1));
+    if (btnSpeed2x) btnSpeed2x.addEventListener('click', () => updateSpeedUI(2));
+    if (btnSpeed4x) btnSpeed4x.addEventListener('click', () => updateSpeedUI(4));
+
+    // Seletor de Zoom da Interface (100% / 125%)
+    const btnZoom100 = document.getElementById('btnZoom100');
+    const btnZoom125 = document.getElementById('btnZoom125');
+    if (btnZoom100 && btnZoom125) {
+      btnZoom100.addEventListener('click', () => {
+        document.body.style.zoom = '1.0';
+        btnZoom100.className = 'px-1.5 py-0.2 bg-[#404040] text-white border border-black text-[10px] font-bold';
+        btnZoom125.className = 'px-1.5 py-0.2 bg-[#c0c0c0] border border-[#808080] hover:bg-white text-[10px] font-bold';
+      });
+      btnZoom125.addEventListener('click', () => {
+        document.body.style.zoom = '1.25';
+        btnZoom125.className = 'px-1.5 py-0.2 bg-[#404040] text-white border border-black text-[10px] font-bold';
+        btnZoom100.className = 'px-1.5 py-0.2 bg-[#c0c0c0] border border-[#808080] hover:bg-white text-[10px] font-bold';
+      });
+    }
   }
 
   initModeSwitcher() {
@@ -457,6 +505,99 @@ export class SCADASystem {
     `).join('');
   }
 
+  /**
+   * Monitor Contínuo de Alarmes de Processo (Detecção de Bordas ISA-18.2)
+   * Registra alarmes dinamicamente tanto no processo normal quanto em injeção de falhas.
+   */
+  checkProcessAlarms() {
+    // 1. Silo A (LIT-701)
+    if (this.plc.inputs.p_NC701) {
+      if (!this.lastAlarmStates.p_NC701) {
+        this.lastAlarmStates.p_NC701 = true;
+        this.lastAlarmStates.p_NA701 = true;
+        this.logAlarm('LIT-701', 'Nível Crítico atingido no Silo A (≥ 95%) -> Bloqueio do dosador c_ALIM!', 'CRÍTICO');
+      }
+    } else {
+      this.lastAlarmStates.p_NC701 = false;
+      if (this.plc.inputs.p_NA701) {
+        if (!this.lastAlarmStates.p_NA701) {
+          this.lastAlarmStates.p_NA701 = true;
+          this.logAlarm('LIT-701', 'Nível Alto no Silo A (> 90%) - Atenção ao enchimento.', 'ALTO');
+        }
+      } else {
+        this.lastAlarmStates.p_NA701 = false;
+      }
+    }
+
+    // 2. Silo B (LIT-702)
+    if (this.plc.inputs.p_NC702) {
+      if (!this.lastAlarmStates.p_NC702) {
+        this.lastAlarmStates.p_NC702 = true;
+        this.lastAlarmStates.p_NA702 = true;
+        this.logAlarm('LIT-702', 'Nível Crítico atingido no Silo B (≥ 95%) -> Bloqueio do dosador c_ALIM!', 'CRÍTICO');
+      }
+    } else {
+      this.lastAlarmStates.p_NC702 = false;
+      if (this.plc.inputs.p_NA702) {
+        if (!this.lastAlarmStates.p_NA702) {
+          this.lastAlarmStates.p_NA702 = true;
+          this.logAlarm('LIT-702', 'Nível Alto no Silo B (> 90%) - Atenção ao enchimento.', 'ALTO');
+        }
+      } else {
+        this.lastAlarmStates.p_NA702 = false;
+      }
+    }
+
+    // 3. Silo C (LIT-703)
+    if (this.plc.inputs.p_NC703) {
+      if (!this.lastAlarmStates.p_NC703) {
+        this.lastAlarmStates.p_NC703 = true;
+        this.lastAlarmStates.p_NA703 = true;
+        this.logAlarm('LIT-703', 'Nível Crítico atingido no Silo C (≥ 95%) -> Bloqueio do dosador c_ALIM!', 'CRÍTICO');
+      }
+    } else {
+      this.lastAlarmStates.p_NC703 = false;
+      if (this.plc.inputs.p_NA703) {
+        if (!this.lastAlarmStates.p_NA703) {
+          this.lastAlarmStates.p_NA703 = true;
+          this.logAlarm('LIT-703', 'Nível Alto no Silo C (> 90%) - Atenção ao enchimento.', 'ALTO');
+        }
+      } else {
+        this.lastAlarmStates.p_NA703 = false;
+      }
+    }
+
+    // 4. Funil de Alimentação (LIT-101)
+    if (this.plc.inputs.p_NB101) {
+      if (!this.lastAlarmStates.p_NB101) {
+        this.lastAlarmStates.p_NB101 = true;
+        this.logAlarm('LIT-101', 'Nível Baixo no Funil TK-101 (< 15%) - Bloqueio do alimentador vibratório c_ALIM!', 'ALTO');
+      }
+    } else {
+      this.lastAlarmStates.p_NB101 = false;
+    }
+
+    // 5. Purga & Parada Suave em Standby
+    if (this.plc.inputs.p_STANDBY) {
+      if (!this.lastAlarmStates.p_STANDBY) {
+        this.lastAlarmStates.p_STANDBY = true;
+        this.logAlarm('PROCESSO', 'Linha em Standby Seguro: esteira purgada e parada.', 'INFO');
+      }
+    } else {
+      this.lastAlarmStates.p_STANDBY = false;
+    }
+
+    // 6. Falha Mecânica no Ejetor (ZSH-601/FY-603)
+    if (this.plc.diagnostics.p_FALHA_EJETOR) {
+      if (!this.lastAlarmStates.p_FALHA_EJETOR) {
+        this.lastAlarmStates.p_FALHA_EJETOR = true;
+        this.logAlarm('ZSH-601/FY-603', 'FALHA DE EJEÇÃO: Comando FY-603 ativo sem confirmação de sensor magnético ZSH-601!', 'CRÍTICO');
+      }
+    } else {
+      this.lastAlarmStates.p_FALHA_EJETOR = false;
+    }
+  }
+
   animate(now) {
     const dt = Math.min(0.1, (now - this.lastTimestamp) / 1000);
     this.lastTimestamp = now;
@@ -466,20 +607,18 @@ export class SCADASystem {
     this.viewport.panX += (this.viewport.targetPanX - this.viewport.panX) * Math.min(1.0, dt * 10.0);
     this.viewport.panY += (this.viewport.targetPanY - this.viewport.panY) * Math.min(1.0, dt * 10.0);
 
-    // 1. Atualiza Física & Controle (Núcleo Compartilhado)
-    this.sim.update(dt);
-
-    // 2. Alarme de discrepância no atuador
-    if (this.plc.diagnostics.p_FALHA_EJETOR && !this.lastFaultEjector) {
-      this.lastFaultEjector = true;
-      this.logAlarm('ZSH-601/FY-603', 'FALHA DE EJEÇÃO: Comando FY-603 ativo sem confirmação de sensor magnético ZSH-601!', 'CRÍTICO');
-    } else if (!this.plc.diagnostics.p_FALHA_EJETOR) {
-      this.lastFaultEjector = false;
+    // 1. Atualiza Física & Controle (Sub-stepping para velocidade acelerada sem perda de tracking)
+    const steps = this.simSpeedMultiplier || 1;
+    for (let s = 0; s < steps; s++) {
+      this.sim.update(dt);
     }
+
+    // 2. Monitor Contínuo de Alarmes de Processo (Detecção de Bordas ISA-18.2)
+    this.checkProcessAlarms();
 
     // 3. Atualiza Camada SCADA Industrial (P&ID, Alarmes ISA-18.2, Faceplates)
     if (this.industrialView) {
-      this.industrialView.update(dt);
+      this.industrialView.update(dt * steps);
     }
 
     // 4. Renderiza Sinótico com Zoom/Pan
@@ -489,7 +628,7 @@ export class SCADASystem {
     this.vision.renderCameraHUD(this.cameraCanvas, this.vision.lastInspectedGrain);
 
     // 6. Gráficos Historiadores
-    this.chartSampleAccumulator += dt;
+    this.chartSampleAccumulator += dt * steps;
     if (this.chartSampleAccumulator >= 0.5) {
       this.chartSampleAccumulator = 0;
       this.charts.addSample(this.sim.scale.massFlowKgPerHour);

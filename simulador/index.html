@@ -50,6 +50,13 @@
         <span class="font-bold font-mono">OP01</span>
       </div>
 
+      <!-- Seletor de Escala da Interface (Zoom 100% / 125%) -->
+      <div class="hidden md:flex items-center space-x-1 text-[11px] bg-[#e2dfd7] border border-[#808080] px-1.5 py-0.5">
+        <span class="font-sans text-gray-700">Zoom:</span>
+        <button id="btnZoom100" class="px-1.5 py-0.2 bg-[#c0c0c0] border border-[#808080] hover:bg-white text-[10px] font-bold">100%</button>
+        <button id="btnZoom125" class="px-1.5 py-0.2 bg-[#404040] text-white border border-black text-[10px] font-bold">125%</button>
+      </div>
+
       <!-- Badge de Estado da Planta -->
       <div id="plantStatusBadge" class="px-2 py-0.5 text-[11px] font-bold font-sans bg-[#e2dfd7] text-[#006400] border-2 border-[#808080]">
         ● EM OPERAÇÃO NORMAL
@@ -192,6 +199,18 @@
                 <span id="lblSpeedVal" class="scada-io-field py-0.5 text-xs">0.80 m/s</span>
               </div>
               <input id="sliderSpeed" type="range" min="0.2" max="1.5" step="0.05" value="0.8" class="w-full cursor-pointer">
+            </div>
+
+            <!-- Modo Apresentação: Velocidade da Simulação -->
+            <div class="scada-card-inset p-1.5 flex items-center justify-between">
+              <span class="text-[10px] font-bold text-black flex items-center gap-1">
+                ⚡ Velocidade (Demo):
+              </span>
+              <div class="flex gap-1">
+                <button id="btnSimSpeed1x" class="btn-classic px-2 py-0.5 text-[10px] font-bold bg-[#404040] text-white border-black">1x</button>
+                <button id="btnSimSpeed2x" class="btn-classic px-2 py-0.5 text-[10px] font-bold bg-[#c0c0c0] text-black">2x</button>
+                <button id="btnSimSpeed4x" class="btn-classic px-2 py-0.5 text-[10px] font-bold bg-[#c0c0c0] text-black">4x</button>
+              </div>
             </div>
 
             <!-- Ações Auxiliares de Processo -->
@@ -584,7 +603,7 @@
           <label class="scada-card-inset flex items-center justify-between p-2 cursor-pointer hover:bg-[#eae7e0]">
             <div>
               <span class="font-bold text-black">Silo A Aprovados Cheio (LIT-701)</span>
-              <div class="text-[9px] text-gray-600">Nível 100% Silo A ➔ Intertrava alimentação c_ALIM</div>
+              <div class="text-[9px] text-gray-600">Nível Crítico (≥ 95%) Silo A ➔ Intertrava alimentação c_ALIM</div>
             </div>
             <input type="checkbox" id="faultSiloAFull" class="w-4 h-4 cursor-pointer">
           </label>
@@ -592,7 +611,7 @@
           <label class="scada-card-inset flex items-center justify-between p-2 cursor-pointer hover:bg-[#eae7e0]">
             <div>
               <span class="font-bold text-black">Silo B Secundário Cheio (LIT-702)</span>
-              <div class="text-[9px] text-gray-600">Nível 100% Silo B ➔ Intertrava alimentação c_ALIM</div>
+              <div class="text-[9px] text-gray-600">Nível Crítico (≥ 95%) Silo B ➔ Intertrava alimentação c_ALIM</div>
             </div>
             <input type="checkbox" id="faultSiloBFull" class="w-4 h-4 cursor-pointer">
           </label>
@@ -600,7 +619,7 @@
           <label class="scada-card-inset flex items-center justify-between p-2 cursor-pointer hover:bg-[#eae7e0]">
             <div>
               <span class="font-bold text-black">Silo C Rejeito Cheio (LIT-703)</span>
-              <div class="text-[9px] text-gray-600">Nível 100% Silo C ➔ Intertrava alimentação c_ALIM</div>
+              <div class="text-[9px] text-gray-600">Nível Crítico (≥ 95%) Silo C ➔ Intertrava alimentação c_ALIM</div>
             </div>
             <input type="checkbox" id="faultSiloCFull" class="w-4 h-4 cursor-pointer">
           </label>
