@@ -307,12 +307,12 @@ Essa análise demonstra rigorosamente o princípio do 2-Opt: **a inversão de su
 
 ```mermaid
 flowchart TD
-    Doca([1. Partida: LAB-CQ - Doca Central\nNível de Bateria SOC > 85% | Rota Despachada]) --> FN["2. Posto FN-101: Funil de Recepção\nAmostragem de Arroz Bruto in natura (45.0m)"]
+    Doca(["1. Partida: LAB-CQ - Doca Central\nNível de Bateria SOC > 85% | Rota Despachada"]) --> FN["2. Posto FN-101: Funil de Recepção\nAmostragem de Arroz Bruto in natura (45.0m)"]
     FN --> BAL["3. Posto BAL-301: Pesagem Dinâmica\nAferição de Vazão Mássica FT-301 e WT-301 (20.0m)"]
     BAL --> VIS["4. Posto VIS-401: Túnel de Inspeção\nColeta Pré-Ejeção / Validação das Câmeras (18.0m)"]
     VIS --> S701["5. Posto SILO-701: Silo Nobre Cat. A\nColeta de Arroz Aprovado Tipo 1 (25.0m)"]
     S701 --> S702["6. Posto SILO-702: Silo Comercial Cat. B\nColeta de Produto Secundário / Reciclo (35.0m)"]
-    S702 --> Retorno([7. Retorno à Doca: LAB-CQ\nEntrega de Amostras para Bancada NIR (75.0m)\nPercurso Total Consolidado: 218.0m | 0 Cruzamentos])
+    S702 --> Retorno(["7. Retorno à Doca: LAB-CQ\nEntrega de Amostras para Bancada NIR (75.0m)\nPercurso Total Consolidado: 218.0m | 0 Cruzamentos"])
 ```
 
 ---
