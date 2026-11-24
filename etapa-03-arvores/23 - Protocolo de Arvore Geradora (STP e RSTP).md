@@ -220,11 +220,11 @@ O tempo de reconvergência importa porque o permissivo da planta (Aula 2) depend
 
 $$c_{\text{PERM}} \leftrightarrow \neg p_{\text{EMERG}} \land \neg p_{\text{JI201}} \land \neg p_{\text{PAL601}} \land p_{\text{KSA401}} \land \neg p_{\text{SILO\_CHEIO}}$$
 
-Se o CLP ficar sem notícias do `VIS-401` por mais tempo que o seu *timeout* de comunicação, ele deve considerar $p_{\text{KSA401}} = 0$ e desligar a linha. Com a esteira na velocidade nominal de $v = 2{,}0\text{ m/s}$ (Aula 10, caso C01), cada segundo sem rede corresponde a $2\text{ m}$ de grãos que passam pelo túnel sem classificação confiável.
+Se o CLP ficar sem notícias do `VIS-401` por mais tempo que o seu *timeout* de comunicação, ele deve considerar $p_{\text{KSA401}} = 0$ e desligar a linha. Com a esteira na velocidade nominal de $v = 2{,}0\text{ m/s}$ (Aula 10, caso C01), cada segundo sem rede corresponde a $2\text{ m}$ de grãos que passam pelo túnel sem classificação confiável. Por isso o desarme vem logo após o *timeout*: a esteira anda no máximo $v \cdot t_{\text{timeout}}$ sem câmera, e o prejuízo passa a ser o **tempo de linha parada**, que com a vazão nominal de $1200\text{ kg/h}$ (Aula 12) custa $\approx 0{,}33\text{ kg}$ de arroz não processado por segundo.
 
 | Critério | STP Clássico (IEEE 802.1D) | RSTP (IEEE 802.1w) — Adotado | Impacto na linha de grãos |
 | :--- | :--- | :--- | :--- |
-| **Reconvergência** | $30$ a $50\text{ s}$ | $< 1\text{ s}$ (tipicamente $50$ a $200\text{ ms}$ após *link down*) | STP: $60$ a $100\text{ m}$ de esteira sem classificação e trip certo da linha. RSTP: menos de $0{,}4\text{ m}$, abaixo do *timeout* do CLP. |
+| **Reconvergência** | $30$ a $50\text{ s}$ | $< 1\text{ s}$ (tipicamente $50$ a $200\text{ ms}$ após *link down*) | STP: trip certo após o *timeout* ($\approx 1\text{ m}$ de esteira sem câmera) e linha parada por $30$ a $50\text{ s}$ ($10$ a $17\text{ kg}$ não processados). RSTP: no máximo $0{,}4\text{ m}$ sem câmera, abaixo do *timeout* do CLP: sem trip. |
 | **Estados de porta** | 5 (*Disabled, Blocking, Listening, Learning, Forwarding*) | 3 (*Discarding, Learning, Forwarding*) | O RSTP elimina as esperas fixas de *Forward Delay* ($2 \times 15\text{ s}$). |
 | **Papéis de porta** | *Root, Designated, Blocked* | *Root, Designated, **Alternate**, Backup* | A Alternate Port de `SW-SIL` já conhece um caminho para a raiz; vira Root Port sem esperar timers. |
 | **Mecanismo de transição** | Temporizadores passivos | Negociação ativa *Proposal / Agreement* entre vizinhos | Cada enlace é liberado assim que os dois lados concordam. |
