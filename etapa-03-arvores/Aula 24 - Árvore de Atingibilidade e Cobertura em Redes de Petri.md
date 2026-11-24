@@ -189,7 +189,7 @@ Com essa síntese, o sistema passa a obedecer rigorosamente ao **Invariante-P de
 
 $$M(p_{\mathrm{SILO-701}}) + M(p_{\mathrm{SILO-701\_VAGA}}) = K_{\max}, \quad \forall M \in R(N, M_0)$$
 
-Assim, a conclusão/descarga de novos lotes só fica habilitada quando houver espaço físico livre ($M(p_{\mathrm{vaga}}) \ge 1$, equivalente a $\neg p_{\mathrm{NC701}} \land \neg p_{\text{SILO\_CHEIO}}$), restaurando uma **Árvore de Atingibilidade finita, livre de $\omega$, sem *deadlocks*, reversível e viva (*L4-Live*)**.
+Assim, a conclusão/descarga de novos lotes só fica habilitada quando houver espaço físico livre ($M(p_{\mathrm{vaga}}) \ge 1$, equivalente a $\neg p_{\mathrm{NC701}} \land \neg p_{\mathrm{SILO\_CHEIO}}$), restaurando uma **Árvore de Atingibilidade finita, livre de $\omega$, sem *deadlocks*, reversível e viva (*L4-Live*)**.
 
 ---
 
